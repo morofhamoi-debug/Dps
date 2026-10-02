@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+:root {
+  --glass-bg: rgba(255,255,255,0.08);
+  --glass-border: rgba(255,255,255,0.14);
+}
+
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: #0a0a0a;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+}
+
+* { -webkit-tap-highlight-color: transparent; }
+
+@supports not (backdrop-filter: blur(1px)) {
+  .glass { background: rgba(20,20,22,0.92) !important; }
+}
+
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: 22px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+}
+
+.safe-top { padding-top: env(safe-area-inset-top); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
+input, textarea, button { transition: transform 180ms cubic-bezier(.2,.9,.3,1.4); }
+input:active, textarea:active, button:active { transform: scale(0.985); }
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translate(-50%,-8px) scale(0.96); }
+  to   { opacity: 1; transform: translate(-50%,0) scale(1); }
+}
+.toast-anim { animation: toast-in 240ms cubic-bezier(.2,.9,.3,1.2); }
+
+@keyframes sheet-in {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+.sheet-anim { animation: sheet-in 320ms cubic-bezier(.2,.9,.3,1.15); }
+
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+.fade-anim { animation: fade-in 200ms ease-out; }
+
+.map-marker { transition: transform 180ms cubic-bezier(.2,.9,.3,1.4); }
+.map-marker:active { transform: scale(0.92); }
+
+.skeleton { background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.09), rgba(255,255,255,0.04));
+  background-size: 200% 100%; animation: sk 1.4s ease-in-out infinite; border-radius: 16px; }
+@keyframes sk { 0%,100% { background-position: 200% 0; } 50% { background-position: -200% 0; } }
