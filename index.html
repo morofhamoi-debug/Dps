@@ -1,17 +1,994 @@
 <!doctype html>
 <html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
-    <meta name="theme-color" content="#0A0A0A" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Рядом ДПС" />
-    <link rel="apple-touch-icon" href="/icon-192.png" />
-    <title>Рядом ДПС</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0A0A0A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Рядом ДПС">
+<title>Рядом ДПС</title>
+<script src="https://api-maps.yandex.ru/v3/?apikey=1b39af7b-c0bf-43d7-84ff-842ba9a85dcb&lang=ru_RU"></script>
+<style>
+:root{
+  --red:#E11D2E;
+  --glass:rgba(255,255,255,.08);
+  --border:rgba(255,255,255,.14);
+  --bg:#0a0a0a;
+  --radius:22px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;overscroll-behavior:none;background:var(--bg);color:#fff;
+  font:15px/1.4 -apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif}
+button,input,textarea{font:inherit;color:inherit;background:none;border:0;outline:none}
+button{cursor:pointer;transition:transform .18s cubic-bezier(.2,.9,.3,1.4)}
+button:active{transform:scale(.97)}
+input,textarea{transition:border-color .2s}
+
+.glass{
+  background:var(--glass);
+  backdrop-filter:blur(14px) saturate(160%);
+  -webkit-backdrop-filter:blur(14px) saturate(160%);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:0 8px 32px rgba(0,0,0,.35);
+}
+@supports not (backdrop-filter:blur(1px)){.glass{background:rgba(20,20,22,.94)}}
+
+#map{position:fixed;inset:0;z-index:0}
+
+.top{position:fixed;left:12px;right:12px;top:0;z-index:30;padding-top:env(safe-area-inset-top)}
+.top-inner{margin-top:12px;padding:8px;display:flex;gap:8px;align-items:center}
+.logo{width:40px;height:40px;flex-shrink:0;border-radius:16px;background:var(--red);
+  display:grid;place-items:center;font-weight:700;font-size:18px}
+.btn-main{flex:1;padding:10px 12px;border-radius:16px;text-align:left;line-height:1.15}
+.btn-main b{font-weight:600;font-size:14px;display:block}
+.btn-main span{font-size:11px;color:#999}
+.btn-red{background:var(--red);color:#fff;padding:11px 16px;border-radius:16px;font-weight:600;font-size:14px}
+.row2{margin-top:8px;display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.row2::-webkit-scrollbar{display:none}
+.pill{padding:8px 14px;border-radius:999px;font-size:13px;white-space:nowrap;flex-shrink:0}
+.search{flex:1;min-width:150px;padding:8px 14px;border-radius:999px;font-size:13px}
+.search::placeholder{color:#666}
+
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:30;padding:0 12px calc(12px + env(safe-area-inset-bottom))}
+.nav-inner{margin:0 auto;max-width:420px;padding:6px;display:flex;justify-content:space-around}
+.nav-btn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 18px;
+  border-radius:16px;color:#ccc;font-size:10px}
+.nav-btn .ico{font-size:18px;line-height:1}
+.nav-btn.active{color:var(--red)}
+
+.sheet-bg{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.55);
+  animation:fade .2s ease-out;display:none}
+.sheet-bg.open{display:block}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;
+  background:rgba(22,22,24,.96);backdrop-filter:blur(20px) saturate(160%);
+  -webkit-backdrop-filter:blur(20px) saturate(160%);
+  border-top:1px solid var(--border);
+  border-radius:28px 28px 0 0;
+  padding:12px 20px calc(20px + env(safe-area-inset-bottom));
+  max-height:88vh;overflow-y:auto;
+  transform:translateY(100%);transition:transform .32s cubic-bezier(.2,.9,.3,1.15);
+  display:none}
+.sheet.open{display:block;transform:translateY(0)}
+.sheet .handle{width:44px;height:5px;border-radius:3px;background:#444;margin:0 auto 16px}
+.sheet h2{font-size:19px;font-weight:600;margin-bottom:16px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.5px;
+  color:#888;margin-bottom:6px}
+.field input,.field textarea{width:100%;padding:12px 14px;border-radius:16px;
+  background:rgba(255,255,255,.05);border:1px solid var(--border)}
+.field input:focus,.field textarea:focus{border-color:var(--red)}
+.field textarea{resize:none;min-height:80px;font-family:inherit}
+.types{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.type{padding:10px 12px;border-radius:16px;font-size:13px;text-align:left;
+  background:rgba(255,255,255,.05);border:1px solid var(--border);color:#ccc}
+.type.sel{background:rgba(225,29,46,.15);border-color:var(--red);color:#fff}
+.actions{display:flex;gap:8px;margin-top:16px}
+.actions button{flex:1;padding:14px;border-radius:16px;font-weight:600;font-size:15px}
+.btn-secondary{background:rgba(255,255,255,.06);border:1px solid var(--border)}
+.btn-danger{background:var(--red)}
+.btn-block{width:100%;padding:14px;border-radius:16px;font-weight:600;margin-top:16px}
+
+.marker-item{width:100%;text-align:left;padding:12px;border-radius:16px;
+  background:rgba(255,255,255,.05);border:1px solid var(--border);margin-bottom:8px}
+.marker-item .t{font-size:11px;color:var(--red);font-weight:500}
+.marker-item .n{font-size:14px;font-weight:500;margin-top:2px;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.marker-item .m{font-size:11px;color:#888;margin-top:4px;
+  display:flex;gap:8px;flex-wrap:wrap}
+
+.card-meta{display:flex;gap:8px;flex-wrap:wrap;font-size:13px;color:#999;margin:8px 0}
+.card-meta .ok{color:#22c55e}
+.card-meta .exp{color:#666}
+.confirms{font-size:13px;color:#ccc;margin:8px 0 16px}
+
+.filters{margin-bottom:12px;padding:12px;border-radius:16px;
+  background:rgba(255,255,255,.04);border:1px solid var(--border);display:none}
+.filters.open{display:block}
+.filters h3{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#888;
+  margin:12px 0 8px}
+.filters h3:first-child{margin-top:0}
+.filters label{display:flex;align-items:center;gap:8px;font-size:13px;
+  padding:4px 0;color:#ccc}
+.filters input[type=checkbox]{width:16px;height:16px;accent-color:var(--red)}
+.radius{display:flex;flex-wrap:wrap;gap:6px}
+.radius button{padding:6px 12px;border-radius:999px;font-size:12px;
+  background:rgba(255,255,255,.05);border:1px solid var(--border)}
+.radius button.sel{background:var(--red);border-color:var(--red);font-weight:600}
+
+.sort{display:flex;gap:6px;margin-bottom:12px}
+.sort button{padding:6px 12px;border-radius:999px;font-size:12px;color:#999}
+.sort button.sel{background:rgba(255,255,255,.12);color:#fff;font-weight:600}
+
+.toast{position:fixed;left:50%;top:calc(80px + env(safe-area-inset-top));z-index:100;
+  transform:translateX(-50%);padding:12px 20px;border-radius:16px;font-size:14px;
+  background:rgba(22,22,24,.96);border:1px solid var(--border);
+  backdrop-filter:blur(14px);animation:toast .25s cubic-bezier(.2,.9,.3,1.2);
+  pointer-events:none;max-width:90vw;text-align:center}
+@keyframes toast{from{opacity:0;transform:translate(-50%,-8px)}to{opacity:1;transform:translate(-50%,0)}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes sheet-in{from{transform:translateY(100%)}to{transform:translateY(0)}}
+
+.pick-cross{position:fixed;left:50%;top:50%;z-index:20;transform:translate(-50%,-80px);
+  pointer-events:none}
+.pick-cross .c{width:40px;height:40px;border-radius:50%;border:2px solid rgba(255,255,255,.7);
+  box-shadow:0 0 0 4px rgba(225,29,46,.35)}
+
+.skeleton{height:60px;border-radius:16px;margin-bottom:8px;
+  background:linear-gradient(90deg,rgba(255,255,255,.04),rgba(255,255,255,.08),rgba(255,255,255,.04));
+  background-size:200% 100%;animation:sk 1.4s infinite}
+@keyframes sk{0%,100%{background-position:200% 0}50%{background-position:-200% 0}}
+
+.empty{padding:24px;text-align:center;border:1px dashed var(--border);
+  border-radius:16px;color:#888;font-size:14px}
+.empty b{display:block;color:#fff;font-size:16px;margin-bottom:4px}
+
+.tabs{display:flex;gap:6px;background:rgba(255,255,255,.05);padding:4px;
+  border-radius:14px;margin-bottom:16px}
+.tabs button{flex:1;padding:8px;border-radius:10px;font-size:14px;color:#999}
+.tabs button.sel{background:rgba(255,255,255,.1);color:#fff;font-weight:600}
+
+.err{padding:12px;border-radius:16px;background:rgba(225,29,46,.1);
+  color:#ff9ca6;font-size:13px;margin-bottom:12px}
+
+.prof-head{display:flex;gap:14px;align-items:center;margin-bottom:20px}
+.avatar{width:60px;height:60px;border-radius:50%;background:var(--red);
+  display:grid;place-items:center;font-size:22px;font-weight:700}
+.prof-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.prof-stat{padding:14px;border-radius:16px;background:rgba(255,255,255,.05);
+  border:1px solid var(--border)}
+.prof-stat b{font-size:22px;font-weight:700;display:block}
+.prof-stat span{font-size:11px;color:#888}
+
+.my-marker{display:flex;gap:8px;padding:10px;border-radius:14px;
+  background:rgba(255,255,255,.05);border:1px solid var(--border);margin-bottom:6px}
+.my-marker .l{flex:1;min-width:0}
+.my-marker .l b{font-size:13px;font-weight:500;display:block;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.my-marker .l span{font-size:11px;color:#888}
+.my-marker button{padding:6px 10px;border-radius:10px;font-size:11px;
+  border:1px solid rgba(225,29,46,.4);color:#ff9ca6}
+
+.admin{position:fixed;inset:0;z-index:60;background:#0a0a0a;overflow-y:auto;
+  padding:20px;padding-top:calc(20px + env(safe-area-inset-top));
+  padding-bottom:calc(20px + env(safe-area-inset-bottom));display:none}
+.admin.open{display:block}
+.admin h1{font-size:24px;font-weight:700;margin-bottom:20px}
+.admin h2{font-size:16px;font-weight:600;margin:20px 0 10px}
+.admin .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px}
+.admin .stat{padding:14px;border-radius:16px;background:rgba(255,255,255,.05);
+  border:1px solid var(--border)}
+.admin .stat b{font-size:22px;font-weight:700;display:block}
+.admin .stat span{font-size:11px;color:#888}
+.admin-row{padding:12px;border-radius:14px;background:rgba(255,255,255,.05);
+  border:1px solid var(--border);margin-bottom:6px;display:flex;gap:10px;align-items:center}
+.admin-row .l{flex:1;min-width:0}
+.admin-row .l b{font-size:13px;font-weight:500;display:block;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.admin-row .l span{font-size:11px;color:#888}
+.admin-row button{padding:6px 10px;border-radius:10px;font-size:11px;
+  border:1px solid var(--border);flex-shrink:0}
+.admin-row button.red{border-color:rgba(225,29,46,.4);color:#ff9ca6}
+
+.map-marker{transition:transform .18s cubic-bezier(.2,.9,.3,1.4)}
+.map-marker:active{transform:scale(.92)}
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div class="top">
+  <div class="glass top-inner">
+    <div class="logo">Д</div>
+    <button class="btn-main" id="btn-list">
+      <b>Метки рядом</b>
+      <span id="marker-count">Загрузка…</span>
+    </button>
+    <button class="btn-red" id="btn-add">+ Метка</button>
+  </div>
+  <div class="row2" id="row2">
+    <button class="glass pill" id="btn-locate">◎ Я здесь</button>
+    <input class="glass search" id="search" placeholder="Поиск адреса…">
+    <button class="glass pill" id="btn-admin" style="display:none">⚙ Админ</button>
+  </div>
+</div>
+
+<div class="nav">
+  <div class="glass nav-inner">
+    <button class="nav-btn active" id="nav-map"><span class="ico">◉</span>Карта</button>
+    <button class="nav-btn" id="nav-list"><span class="ico">☰</span>Метки</button>
+    <button class="nav-btn" id="nav-profile"><span class="ico">◐</span>Профиль</button>
+  </div>
+</div>
+
+<div class="pick-cross" id="pick-cross" style="display:none">
+  <div class="c"></div>
+</div>
+
+<!-- Bottom sheets -->
+<div class="sheet-bg" id="bg"></div>
+
+<div class="sheet" id="sheet-list">
+  <div class="handle"></div>
+  <h2>Метки рядом</h2>
+  <button class="btn-secondary btn-block" id="btn-filters" style="margin-bottom:12px">
+    Фильтры и радиус
+  </button>
+  <div class="filters" id="filters">
+    <h3>Типы</h3>
+    <div id="type-checkboxes"></div>
+    <h3>Радиус</h3>
+    <div class="radius" id="radius-btns"></div>
+  </div>
+  <div class="sort" id="sort">
+    <button data-sort="near" class="sel">Рядом</button>
+    <button data-sort="new">Новые</button>
+    <button data-sort="actual">Актуальные</button>
+  </div>
+  <div id="markers-list"></div>
+</div>
+
+<div class="sheet" id="sheet-form">
+  <div class="handle"></div>
+  <h2>Новая метка</h2>
+  <div class="field">
+    <label>Тип</label>
+    <div class="types" id="form-types"></div>
+  </div>
+  <div class="field">
+    <label>Название</label>
+    <input id="form-title" maxlength="120" placeholder="Например: экипаж ДПС на мосту">
+  </div>
+  <div class="field">
+    <label>Описание</label>
+    <textarea id="form-desc" maxlength="1000" placeholder="Дополнительные детали (необязательно)"></textarea>
+  </div>
+  <div class="field" id="form-coords" style="font-size:11px;color:#666"></div>
+  <div id="form-err" class="err" style="display:none"></div>
+  <div class="actions">
+    <button class="btn-secondary" id="form-cancel">Отмена</button>
+    <button class="btn-danger" id="form-submit">Добавить</button>
+  </div>
+</div>
+
+<div class="sheet" id="sheet-card">
+  <div class="handle"></div>
+  <div id="card-content"></div>
+</div>
+
+<div class="sheet" id="sheet-auth">
+  <div class="handle"></div>
+  <div class="tabs">
+    <button data-auth="signin" class="sel">Вход</button>
+    <button data-auth="signup">Регистрация</button>
+  </div>
+  <div class="field" id="auth-name-field" style="display:none">
+    <label>Имя</label>
+    <input id="auth-name" placeholder="Ваше имя">
+  </div>
+  <div class="field">
+    <label>Email</label>
+    <input id="auth-email" type="email" placeholder="you@example.com">
+  </div>
+  <div class="field">
+    <label>Пароль</label>
+    <input id="auth-password" type="password" placeholder="Минимум 6 символов">
+  </div>
+  <div id="auth-err" class="err" style="display:none"></div>
+  <button class="btn-danger btn-block" id="auth-submit">Войти</button>
+</div>
+
+<div class="sheet" id="sheet-profile">
+  <div class="handle"></div>
+  <div id="profile-content"></div>
+</div>
+
+<div class="admin" id="admin-panel">
+  <button class="btn-secondary" id="admin-back" style="padding:8px 14px;border-radius:14px;margin-bottom:16px">← Назад</button>
+  <h1>Админ-панель</h1>
+  <div class="stats" id="admin-stats"></div>
+  <h2>Новые метки</h2>
+  <div id="admin-markers"></div>
+  <h2>Жалобы</h2>
+  <div id="admin-reports"></div>
+  <h2>Пользователи</h2>
+  <div id="admin-users"></div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4'
+
+/* ========== CONFIG ========== */
+const SUPABASE_URL = 'https://zadkoxzbivzhrtxwbcp.supabase.co'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InphZGtxb3h6Yml2emhydHh3YmNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5NzE3MDcsImV4cCI6MjEwNjU0NzcwN30.1CoLoueWaN0t5uJPTUy5DYuHTiWFRIV-gGVyP9GqY0w'
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true }
+})
+
+/* ========== TYPES ========== */
+const TYPE_LABELS = {
+  traffic: 'Дорожная обстановка',
+  accident: 'ДТП',
+  repair: 'Ремонт',
+  closure: 'Перекрытие',
+  danger: 'Опасный участок',
+  other: 'Другая информация'
+}
+
+/* ========== STATE ========== */
+const state = {
+  user: null,
+  profile: null,
+  markers: [],
+  center: { lat: 55.751244, lon: 37.618423 },
+  zoom: 13,
+  pickMode: false,
+  picked: null,
+  selected: null,
+  types: Object.keys(TYPE_LABELS),
+  radius: 'all',
+  sort: 'near',
+  userLocation: null
+}
+
+/* ========== UTILS ========== */
+function haversine(a, b) {
+  const R = 6371
+  const dLat = (b.lat - a.lat) * Math.PI / 180
+  const dLon = (b.lon - a.lon) * Math.PI / 180
+  const x = Math.sin(dLat / 2) ** 2 +
+    Math.cos(a.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180) * Math.sin(dLon / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x))
+}
+function formatDist(km) {
+  return km < 1 ? Math.round(km * 1000) + ' м' : km.toFixed(1) + ' км'
+}
+function timeAgo(iso) {
+  const d = Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
+  if (d < 60) return 'только что'
+  if (d < 3600) return Math.floor(d / 60) + ' мин назад'
+  if (d < 86400) return Math.floor(d / 3600) + ' ч назад'
+  return Math.floor(d / 86400) + ' дн назад'
+}
+function markerSvg() {
+  return '<svg xmlns="http://www.w3.org/2000/svg" width="36" height="46" viewBox="0 0 36 46">' +
+    '<defs><filter id="s" x="-50%" y="-50%" width="200%" height="200%">' +
+    '<feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000" flood-opacity=".35"/>' +
+    '</filter></defs>' +
+    '<path filter="url(#s)" fill="#E11D2E" d="M18 1C8.6 1 1 8.6 1 18c0 12.5 17 27 17 27s17-14.5 17-27C35 8.6 27.4 1 18 1z"/>' +
+    '<circle cx="18" cy="18" r="7.5" fill="#fff"/>' +
+    '<circle cx="18" cy="18" r="3.5" fill="#E11D2E"/></svg>'
+}
+function el(id) { return document.getElementById(id) }
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]))
+}
+function toast(msg) {
+  const t = document.createElement('div')
+  t.className = 'toast'
+  t.textContent = msg
+  document.body.appendChild(t)
+  setTimeout(() => t.remove(), 2600)
+}
+
+/* ========== SHEETS ========== */
+const sheets = {
+  list: el('sheet-list'), form: el('sheet-form'),
+  card: el('sheet-card'), auth: el('sheet-auth'),
+  profile: el('sheet-profile')
+}
+let currentSheet = null
+
+function openSheet(name) {
+  closeSheet()
+  const s = sheets[name]
+  if (!s) return
+  el('bg').classList.add('open')
+  s.classList.add('open')
+  currentSheet = name
+}
+function closeSheet() {
+  if (currentSheet) sheets[currentSheet].classList.remove('open')
+  el('bg').classList.remove('open')
+  currentSheet = null
+}
+el('bg').onclick = closeSheet
+
+/* ========== AUTH ========== */
+async function loadProfile(userId) {
+  const { data } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle()
+  state.profile = data
+  el('btn-admin').style.display = data?.role === 'admin' ? '' : 'none'
+}
+supabase.auth.onAuthStateChange(async (_e, s) => {
+  state.user = s?.user ?? null
+  if (state.user) await loadProfile(state.user.id)
+  else { state.profile = null; el('btn-admin').style.display = 'none' }
+  if (currentSheet === 'profile') renderProfile()
+})
+
+async function initAuth() {
+  const { data } = await supabase.auth.getSession()
+  state.user = data.session?.user ?? null
+  if (state.user) await loadProfile(state.user.id)
+}
+
+/* ========== MARKERS ========== */
+async function loadMarkers() {
+  let q = supabase.from('markers').select('*').eq('status', 'active')
+    .gt('expires_at', new Date().toISOString())
+  if (state.types.length) q = q.in('type', state.types)
+  const { data, error } = await q.order('created_at', { ascending: false }).limit(500)
+  if (error) { console.error(error); toast('Не удалось загрузить метки'); return }
+  state.markers = data || []
+  applyRadius()
+  renderList()
+  renderMarkersOnMap()
+  el('marker-count').textContent = state.markers.length + ' активных'
+}
+function applyRadius() {
+  if (!state.userLocation || state.radius === 'all') return
+  state.markers = state.markers.filter(m =>
+    haversine(
+      { lat: state.userLocation.lat, lon: state.userLocation.lon },
+      { lat: m.latitude, lon: m.longitude }
+    ) <= state.radius
+  )
+}
+
+/* ========== MAP ========== */
+let map = null
+let mapMarkers = new Map()
+
+async function initMap() {
+  try {
+    await ymaps3.ready
+    const { YMap, YMapDefaultSchemeLayer, YMapDefaultFeaturesLayer } = ymaps3
+    map = new YMap(el('map'), {
+      location: { center: [state.center.lon, state.center.lat], zoom: state.zoom }
+    })
+    map.addChild(new YMapDefaultSchemeLayer({}))
+    map.addChild(new YMapDefaultFeaturesLayer({}))
+    // Отслеживаем движение карты в режиме выбора
+    map.addChild(new ymaps3.YMapListener({
+      onActionEnd: () => {
+        if (!state.pickMode) return
+        const c = map.center
+        if (c) state.picked = { lat: c[1], lon: c[0] }
+      }
+    }))
+    renderMarkersOnMap()
+  } catch (e) {
+    console.error('Карта не загрузилась:', e)
+    el('map').innerHTML = '<div style="position:absolute;inset:0;display:grid;place-items:center;padding:20px">' +
+      '<div class="glass" style="padding:24px;max-width:340px;text-align:center">' +
+      '<div style="color:#ff5566;font-weight:600;font-size:17px;margin-bottom:8px">Не удалось загрузить карту</div>' +
+      '<div style="color:#999;font-size:13px;margin-bottom:16px">Проверьте интернет или API-ключ</div>' +
+      '<button onclick="location.reload()" style="background:var(--red);color:#fff;padding:12px 20px;border-radius:14px;font-weight:600">Повторить</button>' +
+      '</div></div>'
+  }
+}
+
+function renderMarkersOnMap() {
+  if (!map || !window.ymaps3) return
+  const { YMapMarker } = ymaps3
+  const seen = new Set()
+  const svgUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(markerSvg())
+  state.markers.forEach(m => {
+    seen.add(m.id)
+    if (mapMarkers.has(m.id)) return
+    const btn = document.createElement('button')
+    btn.className = 'map-marker'
+    btn.style.cssText = 'background:transparent;border:0;padding:0;cursor:pointer'
+    btn.innerHTML = '<img src="' + svgUrl + '" width="36" height="46" alt="">'
+    btn.onclick = e => { e.stopPropagation(); showMarker(m) }
+    const mk = new YMapMarker({ coordinates: [m.longitude, m.latitude], anchor: [0.5, 1] }, btn)
+    map.addChild(mk)
+    mapMarkers.set(m.id, mk)
+  })
+  for (const [id, obj] of mapMarkers) {
+    if (!seen.has(id)) { map.removeChild(obj); mapMarkers.delete(id) }
+  }
+}
+
+function setCenter(lat, lon, zoom) {
+  state.center = { lat, lon }
+  if (zoom) state.zoom = zoom
+  if (map) map.update({ location: { center: [lon, lat], zoom: state.zoom, duration: 600 } })
+}
+
+/* ========== RENDER LIST ========== */
+function renderList() {
+  const list = el('markers-list')
+  if (state.markers.length === 0) {
+    list.innerHTML = '<div class="empty"><b>Здесь пока тихо</b>Если знаете о дорожной ситуации, добавьте метку на карту.</div>'
+    return
+  }
+  const base = state.userLocation || state.center
+  const withDist = state.markers.map(m => ({
+    ...m,
+    _dist: haversine({ lat: base.lat, lon: base.lon }, { lat: m.latitude, lon: m.longitude })
+  }))
+  if (state.sort === 'near') withDist.sort((a, b) => a._dist - b._dist)
+  if (state.sort === 'new') withDist.sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at))
+  if (state.sort === 'actual') withDist.sort((a, b) => b.confirmations_count - a.confirmations_count)
+
+  list.innerHTML = withDist.map(m => `
+    <button class="marker-item" data-id="${m.id}">
+      <div class="t">${escapeHtml(TYPE_LABELS[m.type])}</div>
+      <div class="n">${escapeHtml(m.title)}</div>
+      <div class="m">
+        <span>${formatDist(m._dist)}</span>
+        <span>·</span>
+        <span>${timeAgo(m.created_at)}</span>
+        <span>·</span>
+        <span>${m.confirmations_count} ✓</span>
+      </div>
+    </button>
+  `).join('')
+
+  list.querySelectorAll('.marker-item').forEach(btn => {
+    btn.onclick = () => {
+      const m = state.markers.find(x => x.id === btn.dataset.id)
+      if (m) { closeSheet(); setCenter(m.latitude, m.longitude, 16); setTimeout(() => showMarker(m), 400) }
+    }
+  })
+}
+
+/* ========== SHOW MARKER CARD ========== */
+function showMarker(m) {
+  state.selected = m
+  const base = state.userLocation || state.center
+  const dist = haversine({ lat: base.lat, lon: base.lon }, { lat: m.latitude, lon: m.longitude })
+  const expired = new Date(m.expires_at) < new Date()
+  const isOwner = state.user && state.user.id === m.user_id
+
+  el('card-content').innerHTML = `
+    <div style="font-size:11px;color:var(--red);text-transform:uppercase;letter-spacing:.5px">
+      ${escapeHtml(TYPE_LABELS[m.type])}
+    </div>
+    <h2 style="margin-top:8px">${escapeHtml(m.title)}</h2>
+    ${m.description ? '<p style="color:#ccc;margin:8px 0">' + escapeHtml(m.description) + '</p>' : ''}
+    <div class="card-meta">
+      <span>${formatDist(dist)}</span><span>·</span>
+      <span>${timeAgo(m.created_at)}</span><span>·</span>
+      <span class="${expired ? 'exp' : 'ok'}">${expired ? 'Неактуально' : 'Актуально'}</span>
+    </div>
+    <div class="confirms">✓ ${m.confirmations_count} подтверждений</div>
+    <div id="card-actions"></div>
+  `
+  const actions = el('card-actions')
+  if (!isOwner) {
+    actions.innerHTML = `
+      <div class="actions">
+        <button class="btn-secondary" id="c-confirm">Подтвердить</button>
+        <button class="btn-secondary" id="c-report">Пожаловаться</button>
+      </div>`
+    el('c-confirm').onclick = async () => {
+      if (!state.user) { closeSheet(); openSheet('auth'); return }
+      const { error } = await supabase.from('confirmations').insert({ marker_id: m.id, user_id: state.user.id })
+      if (error?.code === '23505') return toast('Вы уже подтверждали')
+      if (error) return toast('Ошибка: ' + error.message)
+      toast('Спасибо за подтверждение')
+      await loadMarkers()
+      closeSheet()
+    }
+    el('c-report').onclick = () => renderReportForm(m)
+  } else {
+    actions.innerHTML = `
+      <div class="actions">
+        <button class="btn-secondary" id="c-delete" style="color:#ff9ca6">Удалить метку</button>
+      </div>`
+    el('c-delete').onclick = async () => {
+      if (!confirm('Удалить метку?')) return
+      const { error } = await supabase.from('markers').delete().eq('id', m.id)
+      if (error) return toast('Ошибка: ' + error.message)
+      toast('Метка удалена')
+      await loadMarkers()
+      closeSheet()
+    }
+  }
+  openSheet('card')
+}
+
+function renderReportForm(m) {
+  el('card-content').innerHTML = `
+    <h2>Причина жалобы</h2>
+    <div id="reasons"></div>
+    <button class="btn-secondary btn-block" id="r-cancel">Отмена</button>
+  `
+  const reasons = [
+    ['false_info', 'Неверная информация'],
+    ['spam', 'Спам'],
+    ['inappropriate', 'Неподходящий контент'],
+    ['other', 'Другое']
+  ]
+  el('reasons').innerHTML = reasons.map(([k, label]) =>
+    `<button class="marker-item" data-r="${k}"><div class="n">${label}</div></button>`
+  ).join('')
+  el('reasons').querySelectorAll('[data-r]').forEach(b => {
+    b.onclick = async () => {
+      const { error } = await supabase.from('reports').insert({
+        marker_id: m.id, user_id: state.user.id, reason: b.dataset.r
+      })
+      if (error) return toast('Ошибка: ' + error.message)
+      toast('Жалоба отправлена')
+      closeSheet()
+    }
+  })
+  el('r-cancel').onclick = () => showMarker(m)
+}
+
+/* ========== FORM ========== */
+let formType = 'traffic'
+function renderFormTypes() {
+  el('form-types').innerHTML = Object.entries(TYPE_LABELS).map(([k, v]) =>
+    `<button class="type${k === formType ? ' sel' : ''}" data-t="${k}">${v}</button>`
+  ).join('')
+  el('form-types').querySelectorAll('[data-t]').forEach(b => {
+    b.onclick = () => { formType = b.dataset.t; renderFormTypes() }
+  })
+}
+
+function openForm(lat, lon) {
+  state.picked = { lat, lon }
+  el('form-coords').textContent = 'Координаты: ' + lat.toFixed(5) + ', ' + lon.toFixed(5)
+  el('form-title').value = ''
+  el('form-desc').value = ''
+  el('form-err').style.display = 'none'
+  formType = 'traffic'
+  renderFormTypes()
+  openSheet('form')
+}
+
+el('form-cancel').onclick = () => { state.picked = null; state.pickMode = false; el('pick-cross').style.display = 'none'; closeSheet() }
+el('form-submit').onclick = async () => {
+  const title = el('form-title').value.trim()
+  const desc = el('form-desc').value.trim()
+  const errEl = el('form-err')
+  errEl.style.display = 'none'
+  if (title.length < 3) { errEl.textContent = 'Название минимум 3 символа'; errEl.style.display = ''; return }
+  if (title.length > 120) { errEl.textContent = 'Название слишком длинное'; errEl.style.display = ''; return }
+  if (desc.length > 1000) { errEl.textContent = 'Описание слишком длинное'; errEl.style.display = ''; return }
+  if (!state.picked) { errEl.textContent = 'Выберите точку на карте'; errEl.style.display = ''; return }
+  if (!state.user) { closeSheet(); openSheet('auth'); return }
+
+  const last = Number(sessionStorage.getItem('dps_last') || 0)
+  if (Date.now() - last < 30000) {
+    errEl.textContent = 'Слишком часто. Подождите немного.'
+    errEl.style.display = ''; return
+  }
+
+  const btn = el('form-submit')
+  btn.disabled = true; btn.textContent = 'Добавляем…'
+  const { error } = await supabase.from('markers').insert({
+    user_id: state.user.id,
+    latitude: state.picked.lat,
+    longitude: state.picked.lon,
+    type: formType,
+    title,
+    description: desc || null
+  })
+  btn.disabled = false; btn.textContent = 'Добавить'
+  if (error) { errEl.textContent = 'Ошибка: ' + error.message; errEl.style.display = ''; return }
+
+  sessionStorage.setItem('dps_last', String(Date.now()))
+  const p = state.picked
+  state.picked = null; state.pickMode = false
+  el('pick-cross').style.display = 'none'
+  closeSheet()
+  setCenter(p.lat, p.lon, 16)
+  toast('Метка добавлена')
+  await loadMarkers()
+}
+
+/* ========== PROFILE ========== */
+async function renderProfile() {
+  if (!state.profile) return
+  const { data: myMarkers } = await supabase.from('markers').select('*')
+    .eq('user_id', state.profile.id).order('created_at', { ascending: false })
+  const total = (myMarkers || []).reduce((s, m) => s + m.confirmations_count, 0)
+  el('profile-content').innerHTML = `
+    <div class="prof-head">
+      <div class="avatar">${escapeHtml((state.profile.username[0] || '?').toUpperCase())}</div>
+      <div>
+        <div style="font-size:17px;font-weight:600">${escapeHtml(state.profile.username)}</div>
+        <div style="font-size:11px;color:#888">С нами с ${new Date(state.profile.created_at).toLocaleDateString('ru-RU')}</div>
+      </div>
+    </div>
+    <div class="prof-stats">
+      <div class="prof-stat"><b>${(myMarkers || []).length}</b><span>меток добавлено</span></div>
+      <div class="prof-stat"><b>${total}</b><span>подтверждений</span></div>
+    </div>
+    <h2 style="font-size:14px;color:#ccc;margin-bottom:8px">Мои метки</h2>
+    <div id="my-markers"></div>
+    <button class="btn-secondary btn-block" id="p-logout">Выйти</button>
+  `
+  const list = el('my-markers')
+  if (!myMarkers || myMarkers.length === 0) {
+    list.innerHTML = '<div class="empty" style="padding:16px;font-size:13px">Вы ещё не добавляли меток</div>'
+  } else {
+    list.innerHTML = myMarkers.map(m => `
+      <div class="my-marker">
+        <div class="l">
+          <b>${escapeHtml(m.title)}</b>
+          <span>${escapeHtml(TYPE_LABELS[m.type])}</span>
+        </div>
+        <button data-id="${m.id}">Удалить</button>
+      </div>
+    `).join('')
+    list.querySelectorAll('button[data-id]').forEach(b => {
+      b.onclick = async () => {
+        if (!confirm('Удалить?')) return
+        const { error } = await supabase.from('markers').delete().eq('id', b.dataset.id)
+        if (error) return toast('Ошибка: ' + error.message)
+        toast('Удалено'); await loadMarkers(); renderProfile()
+      }
+    })
+  }
+  el('p-logout').onclick = async () => {
+    await supabase.auth.signOut()
+    closeSheet()
+    toast('Вы вышли')
+  }
+}
+
+/* ========== ADMIN ========== */
+async function openAdmin() {
+  el('admin-panel').classList.add('open')
+  const [users, markers, active, reports] = await Promise.all([
+    supabase.from('profiles').select('*', { count: 'exact', head: true }),
+    supabase.from('markers').select('*', { count: 'exact', head: true }),
+    supabase.from('markers').select('*', { count: 'exact', head: true }).eq('status', 'active'),
+    supabase.from('reports').select('*', { count: 'exact', head: true })
+  ])
+  el('admin-stats').innerHTML = `
+    <div class="stat"><b>${users.count || 0}</b><span>пользователей</span></div>
+    <div class="stat"><b>${markers.count || 0}</b><span>меток всего</span></div>
+    <div class="stat"><b>${active.count || 0}</b><span>активных</span></div>
+    <div class="stat"><b>${reports.count || 0}</b><span>жалоб</span></div>
+  `
+  const { data: ms } = await supabase.from('markers').select('*')
+    .order('created_at', { ascending: false }).limit(30)
+  el('admin-markers').innerHTML = (ms || []).map(m => `
+    <div class="admin-row">
+      <div class="l">
+        <b>${escapeHtml(m.title)}</b>
+        <span>${TYPE_LABELS[m.type]} · ${m.status}</span>
+      </div>
+      <button data-hide="${m.id}">Скрыть</button>
+      <button class="red" data-del="${m.id}">Удалить</button>
+    </div>
+  `).join('')
+  el('admin-markers').querySelectorAll('[data-hide]').forEach(b => b.onclick = async () => {
+    await supabase.from('markers').update({ status: 'hidden' }).eq('id', b.dataset.hide)
+    toast('Скрыто'); openAdmin()
+  })
+  el('admin-markers').querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+    if (!confirm('Удалить?')) return
+    await supabase.from('markers').delete().eq('id', b.dataset.del)
+    toast('Удалено'); openAdmin()
+  })
+
+  const { data: rs } = await supabase.from('reports').select('*, markers(title)')
+    .order('created_at', { ascending: false }).limit(30)
+  el('admin-reports').innerHTML = (rs || []).map(r => `
+    <div class="admin-row">
+      <div class="l">
+        <b>${escapeHtml(r.markers?.title || '—')}</b>
+        <span>${r.reason} · ${new Date(r.created_at).toLocaleString('ru-RU')}</span>
+      </div>
+    </div>
+  `).join('') || '<div style="color:#666;font-size:13px">Жалоб нет</div>'
+
+  const { data: us } = await supabase.from('profiles').select('*')
+    .order('created_at', { ascending: false }).limit(50)
+  el('admin-users').innerHTML = (us || []).map(u => `
+    <div class="admin-row">
+      <div class="l">
+        <b>${escapeHtml(u.username)}</b>
+        <span>${u.role}${u.is_blocked ? ' · заблокирован' : ''}</span>
+      </div>
+      <button data-block="${u.id}" data-cur="${u.is_blocked}">
+        ${u.is_blocked ? 'Разблокировать' : 'Заблокировать'}
+      </button>
+    </div>
+  `).join('')
+  el('admin-users').querySelectorAll('[data-block]').forEach(b => b.onclick = async () => {
+    await supabase.from('profiles').update({ is_blocked: b.dataset.cur !== 'true' }).eq('id', b.dataset.block)
+    toast('Обновлено'); openAdmin()
+  })
+}
+el('admin-back').onclick = () => el('admin-panel').classList.remove('open')
+
+/* ========== AUTH UI ========== */
+let authMode = 'signin'
+document.querySelectorAll('[data-auth]').forEach(b => {
+  b.onclick = () => {
+    authMode = b.dataset.auth
+    document.querySelectorAll('[data-auth]').forEach(x => x.classList.toggle('sel', x === b))
+    el('auth-name-field').style.display = authMode === 'signup' ? '' : 'none'
+    el('auth-submit').textContent = authMode === 'signin' ? 'Войти' : 'Создать аккаунт'
+  }
+})
+el('auth-submit').onclick = async () => {
+  const email = el('auth-email').value.trim()
+  const password = el('auth-password').value
+  const name = el('auth-name').value.trim()
+  const errEl = el('auth-err')
+  errEl.style.display = 'none'
+  if (!email || !password) { errEl.textContent = 'Заполните email и пароль'; errEl.style.display = ''; return }
+  if (authMode === 'signup' && name.length < 2) { errEl.textContent = 'Введите имя'; errEl.style.display = ''; return }
+  const btn = el('auth-submit')
+  btn.disabled = true
+  const result = authMode === 'signin'
+    ? await supabase.auth.signInWithPassword({ email, password })
+    : await supabase.auth.signUp({ email, password, options: { data: { username: name } } })
+  btn.disabled = false
+  if (result.error) { errEl.textContent = result.error.message; errEl.style.display = ''; return }
+  toast(authMode === 'signin' ? 'Вы вошли' : 'Аккаунт создан')
+  closeSheet()
+}
+
+/* ========== FILTERS UI ========== */
+function renderFilterTypes() {
+  el('type-checkboxes').innerHTML = Object.entries(TYPE_LABELS).map(([k, v]) =>
+    `<label><input type="checkbox" data-t="${k}" ${state.types.includes(k) ? 'checked' : ''}> ${v}</label>`
+  ).join('')
+  el('type-checkboxes').querySelectorAll('input').forEach(inp => {
+    inp.onchange = () => {
+      const t = inp.dataset.t
+      state.types = inp.checked ? [...new Set([...state.types, t])] : state.types.filter(x => x !== t)
+      loadMarkers()
+    }
+  })
+}
+function renderRadiusBtns() {
+  const opts = [['all', 'Все'], [1, '1 км'], [3, '3 км'], [5, '5 км'], [10, '10 км']]
+  el('radius-btns').innerHTML = opts.map(([k, l]) =>
+    `<button data-r="${k}" class="${state.radius === k || String(state.radius) === k ? 'sel' : ''}">${l}</button>`
+  ).join('')
+  el('radius-btns').querySelectorAll('[data-r]').forEach(b => {
+    b.onclick = () => {
+      state.radius = b.dataset.r === 'all' ? 'all' : Number(b.dataset.r)
+      renderRadiusBtns()
+      loadMarkers()
+    }
+  })
+}
+document.querySelectorAll('#sort button').forEach(b => {
+  b.onclick = () => {
+    state.sort = b.dataset.sort
+    document.querySelectorAll('#sort button').forEach(x => x.classList.toggle('sel', x === b))
+    renderList()
+  }
+})
+el('btn-filters').onclick = () => el('filters').classList.toggle('open')
+
+/* ========== EVENTS ========== */
+el('btn-list').onclick = () => { renderList(); openSheet('list') }
+el('nav-list').onclick = () => { renderList(); openSheet('list') }
+el('nav-map').onclick = () => closeSheet()
+el('nav-profile').onclick = () => {
+  if (!state.user) return openSheet('auth')
+  renderProfile(); openSheet('profile')
+}
+el('btn-add').onclick = () => {
+  if (!state.user) return openSheet('auth')
+  state.pickMode = true
+  el('pick-cross').style.display = 'block'
+  el('row2').style.display = 'none'
+  const btn = el('btn-add')
+  btn.textContent = 'Отмена'
+  btn.onclick = () => {
+    state.pickMode = false
+    state.picked = null
+    el('pick-cross').style.display = 'none'
+    el('row2').style.display = ''
+    btn.textContent = '+ Метка'
+    btn.onclick = arguments.callee ? null : null
+    location.reload()  // простая перезагрузка для сброса кнопки
+  }
+  // Появление кнопки "Поставить здесь" внизу
+  const confirmBtn = document.createElement('button')
+  confirmBtn.className = 'glass'
+  confirmBtn.id = 'pick-confirm'
+  confirmBtn.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + env(safe-area-inset-bottom));z-index:25;padding:16px 28px;border-radius:20px;background:var(--red);font-weight:600;color:#fff;font-size:16px;border:0'
+  confirmBtn.textContent = 'Поставить здесь'
+  confirmBtn.onclick = () => {
+    const c = map.center
+    if (!c) return toast('Подождите…')
+    confirmBtn.remove()
+    openForm(c[1], c[0])
+    state.pickMode = false
+    el('pick-cross').style.display = 'none'
+    el('row2').style.display = ''
+    el('btn-add').textContent = '+ Метка'
+    el('btn-add').onclick = null
+    location.reload()  // reset
+  }
+  document.body.appendChild(confirmBtn)
+}
+el('btn-admin').onclick = openAdmin
+el('btn-locate').onclick = () => {
+  if (!navigator.geolocation) return toast('Геолокация не поддерживается')
+  toast('Определяем местоположение…')
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const c = { lat: pos.coords.latitude, lon: pos.coords.longitude }
+      state.userLocation = c
+      setCenter(c.lat, c.lon, 15)
+      toast('Нашли вас')
+    },
+    err => toast(err.code === 1 ? 'Разрешите доступ к геолокации' : 'Не удалось определить'),
+    { enableHighAccuracy: true, timeout: 10000 }
+  )
+}
+el('search').addEventListener('keydown', async e => {
+  if (e.key !== 'Enter') return
+  const q = e.target.value.trim()
+  if (!q) return
+  try {
+    const res = await ymaps3.search({ text: q })
+    const first = res?.[0]
+    const coords = first?.geometry?.coordinates
+    if (coords) { setCenter(coords[1], coords[0], 15); toast('Найдено: ' + (first.properties?.name || q)) }
+    else toast('Ничего не найдено')
+  } catch (err) { toast('Ошибка поиска') }
+})
+
+/* ========== REALTIME ========== */
+supabase.channel('markers-rt')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'markers' }, () => {
+    loadMarkers()
+  })
+  .subscribe()
+
+/* ========== START ========== */
+async function start() {
+  await initAuth()
+  await initMap()
+  await loadMarkers()
+  renderFilterTypes()
+  renderRadiusBtns()
+  // Пробуем получить геолокацию без запроса разрешения — если уже разрешено, применим
+  if (navigator.permissions) {
+    try {
+      const p = await navigator.permissions.query({ name: 'geolocation' })
+      if (p.state === 'granted') {
+        navigator.geolocation.getCurrentPosition(pos => {
+          state.userLocation = { lat: pos.coords.latitude, lon: pos.coords.longitude }
+          setCenter(state.userLocation.lat, state.userLocation.lon, 14)
+          loadMarkers()
+        })
+      }
+    } catch (_) {}
+  }
+}
+start()
+</script>
+</body>
 </html>
