@@ -10,33 +10,20 @@
 <title>Рядом ДПС</title>
 <script src="https://api-maps.yandex.ru/v3/?apikey=1b39af7b-c0bf-43d7-84ff-842ba9a85dcb&lang=ru_RU"></script>
 <style>
-:root{
-  --red:#E11D2E;
-  --glass:rgba(255,255,255,.08);
-  --border:rgba(255,255,255,.14);
-  --bg:#0a0a0a;
-  --radius:22px;
-}
+:root{--red:#E11D2E;--glass:rgba(255,255,255,.08);--border:rgba(255,255,255,.14);--bg:#0a0a0a;--radius:22px}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
 html,body{height:100%;overflow:hidden;overscroll-behavior:none;background:var(--bg);color:#fff;
   font:15px/1.4 -apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif}
 button,input,textarea{font:inherit;color:inherit;background:none;border:0;outline:none}
 button{cursor:pointer;transition:transform .18s cubic-bezier(.2,.9,.3,1.4)}
 button:active{transform:scale(.97)}
-input,textarea{transition:border-color .2s}
 
-.glass{
-  background:var(--glass);
-  backdrop-filter:blur(14px) saturate(160%);
-  -webkit-backdrop-filter:blur(14px) saturate(160%);
-  border:1px solid var(--border);
-  border-radius:var(--radius);
-  box-shadow:0 8px 32px rgba(0,0,0,.35);
-}
+.glass{background:var(--glass);backdrop-filter:blur(14px) saturate(160%);
+  -webkit-backdrop-filter:blur(14px) saturate(160%);border:1px solid var(--border);
+  border-radius:var(--radius);box-shadow:0 8px 32px rgba(0,0,0,.35)}
 @supports not (backdrop-filter:blur(1px)){.glass{background:rgba(20,20,22,.94)}}
 
 #map{position:fixed;inset:0;z-index:0}
-
 .top{position:fixed;left:12px;right:12px;top:0;z-index:30;padding-top:env(safe-area-inset-top)}
 .top-inner{margin-top:12px;padding:8px;display:flex;gap:8px;align-items:center}
 .logo{width:40px;height:40px;flex-shrink:0;border-radius:16px;background:var(--red);
@@ -63,13 +50,10 @@ input,textarea{transition:border-color .2s}
 .sheet-bg.open{display:block}
 .sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;
   background:rgba(22,22,24,.96);backdrop-filter:blur(20px) saturate(160%);
-  -webkit-backdrop-filter:blur(20px) saturate(160%);
-  border-top:1px solid var(--border);
-  border-radius:28px 28px 0 0;
-  padding:12px 20px calc(20px + env(safe-area-inset-bottom));
-  max-height:88vh;overflow-y:auto;
-  transform:translateY(100%);transition:transform .32s cubic-bezier(.2,.9,.3,1.15);
-  display:none}
+  -webkit-backdrop-filter:blur(20px) saturate(160%);border-top:1px solid var(--border);
+  border-radius:28px 28px 0 0;padding:12px 20px calc(20px + env(safe-area-inset-bottom));
+  max-height:88vh;overflow-y:auto;transform:translateY(100%);
+  transition:transform .32s cubic-bezier(.2,.9,.3,1.15);display:none}
 .sheet.open{display:block;transform:translateY(0)}
 .sheet .handle{width:44px;height:5px;border-radius:3px;background:#444;margin:0 auto 16px}
 .sheet h2{font-size:19px;font-weight:600;margin-bottom:16px}
@@ -95,8 +79,7 @@ input,textarea{transition:border-color .2s}
 .marker-item .t{font-size:11px;color:var(--red);font-weight:500}
 .marker-item .n{font-size:14px;font-weight:500;margin-top:2px;overflow:hidden;
   text-overflow:ellipsis;white-space:nowrap}
-.marker-item .m{font-size:11px;color:#888;margin-top:4px;
-  display:flex;gap:8px;flex-wrap:wrap}
+.marker-item .m{font-size:11px;color:#888;margin-top:4px;display:flex;gap:8px;flex-wrap:wrap}
 
 .card-meta{display:flex;gap:8px;flex-wrap:wrap;font-size:13px;color:#999;margin:8px 0}
 .card-meta .ok{color:#22c55e}
@@ -106,11 +89,9 @@ input,textarea{transition:border-color .2s}
 .filters{margin-bottom:12px;padding:12px;border-radius:16px;
   background:rgba(255,255,255,.04);border:1px solid var(--border);display:none}
 .filters.open{display:block}
-.filters h3{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#888;
-  margin:12px 0 8px}
+.filters h3{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#888;margin:12px 0 8px}
 .filters h3:first-child{margin-top:0}
-.filters label{display:flex;align-items:center;gap:8px;font-size:13px;
-  padding:4px 0;color:#ccc}
+.filters label{display:flex;align-items:center;gap:8px;font-size:13px;padding:4px 0;color:#ccc}
 .filters input[type=checkbox]{width:16px;height:16px;accent-color:var(--red)}
 .radius{display:flex;flex-wrap:wrap;gap:6px}
 .radius button{padding:6px 12px;border-radius:999px;font-size:12px;
@@ -123,52 +104,35 @@ input,textarea{transition:border-color .2s}
 
 .toast{position:fixed;left:50%;top:calc(80px + env(safe-area-inset-top));z-index:100;
   transform:translateX(-50%);padding:12px 20px;border-radius:16px;font-size:14px;
-  background:rgba(22,22,24,.96);border:1px solid var(--border);
-  backdrop-filter:blur(14px);animation:toast .25s cubic-bezier(.2,.9,.3,1.2);
-  pointer-events:none;max-width:90vw;text-align:center}
+  background:rgba(22,22,24,.96);border:1px solid var(--border);backdrop-filter:blur(14px);
+  animation:toast .25s cubic-bezier(.2,.9,.3,1.2);pointer-events:none;max-width:90vw;text-align:center}
 @keyframes toast{from{opacity:0;transform:translate(-50%,-8px)}to{opacity:1;transform:translate(-50%,0)}}
 @keyframes fade{from{opacity:0}to{opacity:1}}
-@keyframes sheet-in{from{transform:translateY(100%)}to{transform:translateY(0)}}
 
-.pick-cross{position:fixed;left:50%;top:50%;z-index:20;transform:translate(-50%,-80px);
-  pointer-events:none}
+.pick-cross{position:fixed;left:50%;top:50%;z-index:20;transform:translate(-50%,-80px);pointer-events:none}
 .pick-cross .c{width:40px;height:40px;border-radius:50%;border:2px solid rgba(255,255,255,.7);
   box-shadow:0 0 0 4px rgba(225,29,46,.35)}
 
-.skeleton{height:60px;border-radius:16px;margin-bottom:8px;
-  background:linear-gradient(90deg,rgba(255,255,255,.04),rgba(255,255,255,.08),rgba(255,255,255,.04));
-  background-size:200% 100%;animation:sk 1.4s infinite}
-@keyframes sk{0%,100%{background-position:200% 0}50%{background-position:-200% 0}}
-
-.empty{padding:24px;text-align:center;border:1px dashed var(--border);
-  border-radius:16px;color:#888;font-size:14px}
+.empty{padding:24px;text-align:center;border:1px dashed var(--border);border-radius:16px;color:#888;font-size:14px}
 .empty b{display:block;color:#fff;font-size:16px;margin-bottom:4px}
 
-.tabs{display:flex;gap:6px;background:rgba(255,255,255,.05);padding:4px;
-  border-radius:14px;margin-bottom:16px}
+.tabs{display:flex;gap:6px;background:rgba(255,255,255,.05);padding:4px;border-radius:14px;margin-bottom:16px}
 .tabs button{flex:1;padding:8px;border-radius:10px;font-size:14px;color:#999}
 .tabs button.sel{background:rgba(255,255,255,.1);color:#fff;font-weight:600}
 
-.err{padding:12px;border-radius:16px;background:rgba(225,29,46,.1);
-  color:#ff9ca6;font-size:13px;margin-bottom:12px}
+.err{padding:12px;border-radius:16px;background:rgba(225,29,46,.1);color:#ff9ca6;font-size:13px;margin-bottom:12px}
 
 .prof-head{display:flex;gap:14px;align-items:center;margin-bottom:20px}
-.avatar{width:60px;height:60px;border-radius:50%;background:var(--red);
-  display:grid;place-items:center;font-size:22px;font-weight:700}
+.avatar{width:60px;height:60px;border-radius:50%;background:var(--red);display:grid;place-items:center;font-size:22px;font-weight:700}
 .prof-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
-.prof-stat{padding:14px;border-radius:16px;background:rgba(255,255,255,.05);
-  border:1px solid var(--border)}
+.prof-stat{padding:14px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid var(--border)}
 .prof-stat b{font-size:22px;font-weight:700;display:block}
 .prof-stat span{font-size:11px;color:#888}
-
-.my-marker{display:flex;gap:8px;padding:10px;border-radius:14px;
-  background:rgba(255,255,255,.05);border:1px solid var(--border);margin-bottom:6px}
+.my-marker{display:flex;gap:8px;padding:10px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid var(--border);margin-bottom:6px}
 .my-marker .l{flex:1;min-width:0}
-.my-marker .l b{font-size:13px;font-weight:500;display:block;overflow:hidden;
-  text-overflow:ellipsis;white-space:nowrap}
+.my-marker .l b{font-size:13px;font-weight:500;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .my-marker .l span{font-size:11px;color:#888}
-.my-marker button{padding:6px 10px;border-radius:10px;font-size:11px;
-  border:1px solid rgba(225,29,46,.4);color:#ff9ca6}
+.my-marker button{padding:6px 10px;border-radius:10px;font-size:11px;border:1px solid rgba(225,29,46,.4);color:#ff9ca6}
 
 .admin{position:fixed;inset:0;z-index:60;background:#0a0a0a;overflow-y:auto;
   padding:20px;padding-top:calc(20px + env(safe-area-inset-top));
@@ -177,27 +141,40 @@ input,textarea{transition:border-color .2s}
 .admin h1{font-size:24px;font-weight:700;margin-bottom:20px}
 .admin h2{font-size:16px;font-weight:600;margin:20px 0 10px}
 .admin .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px}
-.admin .stat{padding:14px;border-radius:16px;background:rgba(255,255,255,.05);
-  border:1px solid var(--border)}
+.admin .stat{padding:14px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid var(--border)}
 .admin .stat b{font-size:22px;font-weight:700;display:block}
 .admin .stat span{font-size:11px;color:#888}
-.admin-row{padding:12px;border-radius:14px;background:rgba(255,255,255,.05);
-  border:1px solid var(--border);margin-bottom:6px;display:flex;gap:10px;align-items:center}
+.admin-row{padding:12px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid var(--border);margin-bottom:6px;display:flex;gap:10px;align-items:center}
 .admin-row .l{flex:1;min-width:0}
-.admin-row .l b{font-size:13px;font-weight:500;display:block;overflow:hidden;
-  text-overflow:ellipsis;white-space:nowrap}
+.admin-row .l b{font-size:13px;font-weight:500;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .admin-row .l span{font-size:11px;color:#888}
-.admin-row button{padding:6px 10px;border-radius:10px;font-size:11px;
-  border:1px solid var(--border);flex-shrink:0}
+.admin-row button{padding:6px 10px;border-radius:10px;font-size:11px;border:1px solid var(--border);flex-shrink:0}
 .admin-row button.red{border-color:rgba(225,29,46,.4);color:#ff9ca6}
 
 .map-marker{transition:transform .18s cubic-bezier(.2,.9,.3,1.4)}
 .map-marker:active{transform:scale(.92)}
+
+/* Диагностика карты — видно, если что-то не загрузилось */
+#map-error{position:fixed;inset:0;display:none;place-items:center;padding:20px;z-index:5}
+#map-error.show{display:grid}
+.map-error-card{max-width:340px;padding:24px;text-align:center;background:rgba(22,22,24,.96);
+  border:1px solid var(--border);border-radius:22px;backdrop-filter:blur(14px)}
+.map-error-card h3{color:#ff5566;font-size:17px;font-weight:600;margin-bottom:8px}
+.map-error-card p{color:#999;font-size:13px;margin-bottom:16px;word-break:break-word}
+.map-error-card button{background:var(--red);color:#fff;padding:12px 20px;border-radius:14px;font-weight:600}
 </style>
 </head>
 <body>
 
 <div id="map"></div>
+
+<div id="map-error">
+  <div class="map-error-card">
+    <h3>Не удалось загрузить карту</h3>
+    <p id="map-error-text">Проверьте подключение к интернету.</p>
+    <button onclick="location.reload()">Повторить</button>
+  </div>
+</div>
 
 <div class="top">
   <div class="glass top-inner">
@@ -223,19 +200,14 @@ input,textarea{transition:border-color .2s}
   </div>
 </div>
 
-<div class="pick-cross" id="pick-cross" style="display:none">
-  <div class="c"></div>
-</div>
+<div class="pick-cross" id="pick-cross" style="display:none"><div class="c"></div></div>
 
-<!-- Bottom sheets -->
 <div class="sheet-bg" id="bg"></div>
 
 <div class="sheet" id="sheet-list">
   <div class="handle"></div>
   <h2>Метки рядом</h2>
-  <button class="btn-secondary btn-block" id="btn-filters" style="margin-bottom:12px">
-    Фильтры и радиус
-  </button>
+  <button class="btn-secondary btn-block" id="btn-filters" style="margin-bottom:12px">Фильтры и радиус</button>
   <div class="filters" id="filters">
     <h3>Типы</h3>
     <div id="type-checkboxes"></div>
@@ -340,17 +312,10 @@ const TYPE_LABELS = {
 
 /* ========== STATE ========== */
 const state = {
-  user: null,
-  profile: null,
-  markers: [],
-  center: { lat: 55.751244, lon: 37.618423 },
-  zoom: 13,
-  pickMode: false,
-  picked: null,
-  selected: null,
-  types: Object.keys(TYPE_LABELS),
-  radius: 'all',
-  sort: 'near',
+  user: null, profile: null, markers: [],
+  center: { lat: 55.751244, lon: 37.618423 }, zoom: 13,
+  pickMode: false, picked: null, selected: null,
+  types: Object.keys(TYPE_LABELS), radius: 'all', sort: 'near',
   userLocation: null
 }
 
@@ -363,9 +328,7 @@ function haversine(a, b) {
     Math.cos(a.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180) * Math.sin(dLon / 2) ** 2
   return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x))
 }
-function formatDist(km) {
-  return km < 1 ? Math.round(km * 1000) + ' м' : km.toFixed(1) + ' км'
-}
+function formatDist(km) { return km < 1 ? Math.round(km * 1000) + ' м' : km.toFixed(1) + ' км' }
 function timeAgo(iso) {
   const d = Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
   if (d < 60) return 'только что'
@@ -384,12 +347,11 @@ function markerSvg() {
 }
 function el(id) { return document.getElementById(id) }
 function escapeHtml(s) {
-  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]))
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
 }
 function toast(msg) {
   const t = document.createElement('div')
-  t.className = 'toast'
-  t.textContent = msg
+  t.className = 'toast'; t.textContent = msg
   document.body.appendChild(t)
   setTimeout(() => t.remove(), 2600)
 }
@@ -401,7 +363,6 @@ const sheets = {
   profile: el('sheet-profile')
 }
 let currentSheet = null
-
 function openSheet(name) {
   closeSheet()
   const s = sheets[name]
@@ -429,7 +390,6 @@ supabase.auth.onAuthStateChange(async (_e, s) => {
   else { state.profile = null; el('btn-admin').style.display = 'none' }
   if (currentSheet === 'profile') renderProfile()
 })
-
 async function initAuth() {
   const { data } = await supabase.auth.getSession()
   state.user = data.session?.user ?? null
@@ -464,16 +424,24 @@ let map = null
 let mapMarkers = new Map()
 
 async function initMap() {
+  const errEl = el('map-error')
+  const errText = el('map-error-text')
+
+  if (!window.ymaps3) {
+    errText.textContent = 'Яндекс Карты не загрузились. Проверьте интернет или ключ API.'
+    errEl.classList.add('show')
+    return
+  }
+
   try {
     await ymaps3.ready
-    const { YMap, YMapDefaultSchemeLayer, YMapDefaultFeaturesLayer } = ymaps3
+    const { YMap, YMapDefaultSchemeLayer, YMapDefaultFeaturesLayer, YMapListener } = ymaps3
     map = new YMap(el('map'), {
       location: { center: [state.center.lon, state.center.lat], zoom: state.zoom }
     })
     map.addChild(new YMapDefaultSchemeLayer({}))
     map.addChild(new YMapDefaultFeaturesLayer({}))
-    // Отслеживаем движение карты в режиме выбора
-    map.addChild(new ymaps3.YMapListener({
+    map.addChild(new YMapListener({
       onActionEnd: () => {
         if (!state.pickMode) return
         const c = map.center
@@ -483,12 +451,8 @@ async function initMap() {
     renderMarkersOnMap()
   } catch (e) {
     console.error('Карта не загрузилась:', e)
-    el('map').innerHTML = '<div style="position:absolute;inset:0;display:grid;place-items:center;padding:20px">' +
-      '<div class="glass" style="padding:24px;max-width:340px;text-align:center">' +
-      '<div style="color:#ff5566;font-weight:600;font-size:17px;margin-bottom:8px">Не удалось загрузить карту</div>' +
-      '<div style="color:#999;font-size:13px;margin-bottom:16px">Проверьте интернет или API-ключ</div>' +
-      '<button onclick="location.reload()" style="background:var(--red);color:#fff;padding:12px 20px;border-radius:14px;font-weight:600">Повторить</button>' +
-      '</div></div>'
+    errText.textContent = String(e?.message || e || 'Неизвестная ошибка')
+    errEl.classList.add('show')
   }
 }
 
@@ -520,7 +484,7 @@ function setCenter(lat, lon, zoom) {
   if (map) map.update({ location: { center: [lon, lat], zoom: state.zoom, duration: 600 } })
 }
 
-/* ========== RENDER LIST ========== */
+/* ========== LIST ========== */
 function renderList() {
   const list = el('markers-list')
   if (state.markers.length === 0) {
@@ -541,10 +505,8 @@ function renderList() {
       <div class="t">${escapeHtml(TYPE_LABELS[m.type])}</div>
       <div class="n">${escapeHtml(m.title)}</div>
       <div class="m">
-        <span>${formatDist(m._dist)}</span>
-        <span>·</span>
-        <span>${timeAgo(m.created_at)}</span>
-        <span>·</span>
+        <span>${formatDist(m._dist)}</span><span>·</span>
+        <span>${timeAgo(m.created_at)}</span><span>·</span>
         <span>${m.confirmations_count} ✓</span>
       </div>
     </button>
@@ -558,7 +520,7 @@ function renderList() {
   })
 }
 
-/* ========== SHOW MARKER CARD ========== */
+/* ========== SHOW MARKER ========== */
 function showMarker(m) {
   state.selected = m
   const base = state.userLocation || state.center
@@ -593,8 +555,7 @@ function showMarker(m) {
       if (error?.code === '23505') return toast('Вы уже подтверждали')
       if (error) return toast('Ошибка: ' + error.message)
       toast('Спасибо за подтверждение')
-      await loadMarkers()
-      closeSheet()
+      await loadMarkers(); closeSheet()
     }
     el('c-report').onclick = () => renderReportForm(m)
   } else {
@@ -607,8 +568,7 @@ function showMarker(m) {
       const { error } = await supabase.from('markers').delete().eq('id', m.id)
       if (error) return toast('Ошибка: ' + error.message)
       toast('Метка удалена')
-      await loadMarkers()
-      closeSheet()
+      await loadMarkers(); closeSheet()
     }
   }
   openSheet('card')
@@ -635,8 +595,7 @@ function renderReportForm(m) {
         marker_id: m.id, user_id: state.user.id, reason: b.dataset.r
       })
       if (error) return toast('Ошибка: ' + error.message)
-      toast('Жалоба отправлена')
-      closeSheet()
+      toast('Жалоба отправлена'); closeSheet()
     }
   })
   el('r-cancel').onclick = () => showMarker(m)
@@ -664,7 +623,18 @@ function openForm(lat, lon) {
   openSheet('form')
 }
 
-el('form-cancel').onclick = () => { state.picked = null; state.pickMode = false; el('pick-cross').style.display = 'none'; closeSheet() }
+function exitPickMode() {
+  state.pickMode = false
+  state.picked = null
+  el('pick-cross').style.display = 'none'
+  el('row2').style.display = ''
+  const btn = el('btn-add')
+  btn.textContent = '+ Метка'
+  const old = document.getElementById('pick-confirm')
+  if (old) old.remove()
+}
+
+el('form-cancel').onclick = () => { exitPickMode(); closeSheet() }
 el('form-submit').onclick = async () => {
   const title = el('form-title').value.trim()
   const desc = el('form-desc').value.trim()
@@ -678,8 +648,7 @@ el('form-submit').onclick = async () => {
 
   const last = Number(sessionStorage.getItem('dps_last') || 0)
   if (Date.now() - last < 30000) {
-    errEl.textContent = 'Слишком часто. Подождите немного.'
-    errEl.style.display = ''; return
+    errEl.textContent = 'Слишком часто. Подождите немного.'; errEl.style.display = ''; return
   }
 
   const btn = el('form-submit')
@@ -688,18 +657,15 @@ el('form-submit').onclick = async () => {
     user_id: state.user.id,
     latitude: state.picked.lat,
     longitude: state.picked.lon,
-    type: formType,
-    title,
-    description: desc || null
+    type: formType, title, description: desc || null
   })
   btn.disabled = false; btn.textContent = 'Добавить'
   if (error) { errEl.textContent = 'Ошибка: ' + error.message; errEl.style.display = ''; return }
 
   sessionStorage.setItem('dps_last', String(Date.now()))
   const p = state.picked
-  state.picked = null; state.pickMode = false
-  el('pick-cross').style.display = 'none'
   closeSheet()
+  exitPickMode()
   setCenter(p.lat, p.lon, 16)
   toast('Метка добавлена')
   await loadMarkers()
@@ -733,10 +699,7 @@ async function renderProfile() {
   } else {
     list.innerHTML = myMarkers.map(m => `
       <div class="my-marker">
-        <div class="l">
-          <b>${escapeHtml(m.title)}</b>
-          <span>${escapeHtml(TYPE_LABELS[m.type])}</span>
-        </div>
+        <div class="l"><b>${escapeHtml(m.title)}</b><span>${escapeHtml(TYPE_LABELS[m.type])}</span></div>
         <button data-id="${m.id}">Удалить</button>
       </div>
     `).join('')
@@ -750,9 +713,7 @@ async function renderProfile() {
     })
   }
   el('p-logout').onclick = async () => {
-    await supabase.auth.signOut()
-    closeSheet()
-    toast('Вы вышли')
+    await supabase.auth.signOut(); closeSheet(); toast('Вы вышли')
   }
 }
 
@@ -775,10 +736,7 @@ async function openAdmin() {
     .order('created_at', { ascending: false }).limit(30)
   el('admin-markers').innerHTML = (ms || []).map(m => `
     <div class="admin-row">
-      <div class="l">
-        <b>${escapeHtml(m.title)}</b>
-        <span>${TYPE_LABELS[m.type]} · ${m.status}</span>
-      </div>
+      <div class="l"><b>${escapeHtml(m.title)}</b><span>${TYPE_LABELS[m.type]} · ${m.status}</span></div>
       <button data-hide="${m.id}">Скрыть</button>
       <button class="red" data-del="${m.id}">Удалить</button>
     </div>
@@ -797,10 +755,8 @@ async function openAdmin() {
     .order('created_at', { ascending: false }).limit(30)
   el('admin-reports').innerHTML = (rs || []).map(r => `
     <div class="admin-row">
-      <div class="l">
-        <b>${escapeHtml(r.markers?.title || '—')}</b>
-        <span>${r.reason} · ${new Date(r.created_at).toLocaleString('ru-RU')}</span>
-      </div>
+      <div class="l"><b>${escapeHtml(r.markers?.title || '—')}</b>
+        <span>${r.reason} · ${new Date(r.created_at).toLocaleString('ru-RU')}</span></div>
     </div>
   `).join('') || '<div style="color:#666;font-size:13px">Жалоб нет</div>'
 
@@ -808,13 +764,10 @@ async function openAdmin() {
     .order('created_at', { ascending: false }).limit(50)
   el('admin-users').innerHTML = (us || []).map(u => `
     <div class="admin-row">
-      <div class="l">
-        <b>${escapeHtml(u.username)}</b>
-        <span>${u.role}${u.is_blocked ? ' · заблокирован' : ''}</span>
-      </div>
+      <div class="l"><b>${escapeHtml(u.username)}</b>
+        <span>${u.role}${u.is_blocked ? ' · заблокирован' : ''}</span></div>
       <button data-block="${u.id}" data-cur="${u.is_blocked}">
-        ${u.is_blocked ? 'Разблокировать' : 'Заблокировать'}
-      </button>
+        ${u.is_blocked ? 'Разблокировать' : 'Заблокировать'}</button>
     </div>
   `).join('')
   el('admin-users').querySelectorAll('[data-block]').forEach(b => b.onclick = async () => {
@@ -842,8 +795,7 @@ el('auth-submit').onclick = async () => {
   errEl.style.display = 'none'
   if (!email || !password) { errEl.textContent = 'Заполните email и пароль'; errEl.style.display = ''; return }
   if (authMode === 'signup' && name.length < 2) { errEl.textContent = 'Введите имя'; errEl.style.display = ''; return }
-  const btn = el('auth-submit')
-  btn.disabled = true
+  const btn = el('auth-submit'); btn.disabled = true
   const result = authMode === 'signin'
     ? await supabase.auth.signInWithPassword({ email, password })
     : await supabase.auth.signUp({ email, password, options: { data: { username: name } } })
@@ -853,7 +805,7 @@ el('auth-submit').onclick = async () => {
   closeSheet()
 }
 
-/* ========== FILTERS UI ========== */
+/* ========== FILTERS ========== */
 function renderFilterTypes() {
   el('type-checkboxes').innerHTML = Object.entries(TYPE_LABELS).map(([k, v]) =>
     `<label><input type="checkbox" data-t="${k}" ${state.types.includes(k) ? 'checked' : ''}> ${v}</label>`
@@ -869,13 +821,12 @@ function renderFilterTypes() {
 function renderRadiusBtns() {
   const opts = [['all', 'Все'], [1, '1 км'], [3, '3 км'], [5, '5 км'], [10, '10 км']]
   el('radius-btns').innerHTML = opts.map(([k, l]) =>
-    `<button data-r="${k}" class="${state.radius === k || String(state.radius) === k ? 'sel' : ''}">${l}</button>`
+    `<button data-r="${k}" class="${String(state.radius) === k ? 'sel' : ''}">${l}</button>`
   ).join('')
   el('radius-btns').querySelectorAll('[data-r]').forEach(b => {
     b.onclick = () => {
       state.radius = b.dataset.r === 'all' ? 'all' : Number(b.dataset.r)
-      renderRadiusBtns()
-      loadMarkers()
+      renderRadiusBtns(); loadMarkers()
     }
   })
 }
@@ -888,6 +839,41 @@ document.querySelectorAll('#sort button').forEach(b => {
 })
 el('btn-filters').onclick = () => el('filters').classList.toggle('open')
 
+/* ========== SEARCH ========== */
+async function searchYandex(query) {
+  if (!window.ymaps3?.search) return null
+  const res = await ymaps3.search({ text: query })
+  const first = res?.[0]
+  const coords = first?.geometry?.coordinates
+  if (!coords) return null
+  return { lat: coords[1], lon: coords[0], name: first.properties?.name || query }
+}
+async function searchNominatim(query) {
+  const url = 'https://nominatim.openstreetmap.org/search?' + new URLSearchParams({
+    q: query, format: 'json', limit: 1, 'accept-language': 'ru'
+  })
+  const r = await fetch(url, { headers: { 'User-Agent': 'RyadomDPS/1.0' } })
+  const data = await r.json()
+  if (!data[0]) return null
+  return {
+    lat: parseFloat(data[0].lat),
+    lon: parseFloat(data[0].lon),
+    name: data[0].display_name.split(',').slice(0, 2).join(',')
+  }
+}
+el('search').addEventListener('keydown', async e => {
+  if (e.key !== 'Enter') return
+  const q = e.target.value.trim()
+  if (!q) return
+  toast('Ищем…')
+  let result = null
+  try { result = await searchYandex(q) } catch (_) {}
+  if (!result) { try { result = await searchNominatim(q) } catch (_) {} }
+  if (!result) return toast('Ничего не найдено')
+  setCenter(result.lat, result.lon, 15)
+  toast('Найдено: ' + result.name)
+})
+
 /* ========== EVENTS ========== */
 el('btn-list').onclick = () => { renderList(); openSheet('list') }
 el('nav-list').onclick = () => { renderList(); openSheet('list') }
@@ -896,42 +882,77 @@ el('nav-profile').onclick = () => {
   if (!state.user) return openSheet('auth')
   renderProfile(); openSheet('profile')
 }
+
 el('btn-add').onclick = () => {
   if (!state.user) return openSheet('auth')
+  if (state.pickMode) return
   state.pickMode = true
   el('pick-cross').style.display = 'block'
   el('row2').style.display = 'none'
-  const btn = el('btn-add')
-  btn.textContent = 'Отмена'
-  btn.onclick = () => {
-    state.pickMode = false
-    state.picked = null
-    el('pick-cross').style.display = 'none'
-    el('row2').style.display = ''
-    btn.textContent = '+ Метка'
-    btn.onclick = arguments.callee ? null : null
-    location.reload()  // простая перезагрузка для сброса кнопки
-  }
-  // Появление кнопки "Поставить здесь" внизу
+  el('btn-add').textContent = 'Отмена'
+  el('btn-add').onclick = () => { exitPickMode(); bindAddButton() }
+
+  // Кнопка «Поставить здесь» внизу
   const confirmBtn = document.createElement('button')
-  confirmBtn.className = 'glass'
   confirmBtn.id = 'pick-confirm'
-  confirmBtn.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + env(safe-area-inset-bottom));z-index:25;padding:16px 28px;border-radius:20px;background:var(--red);font-weight:600;color:#fff;font-size:16px;border:0'
+  confirmBtn.style.cssText =
+    'position:fixed;left:50%;transform:translateX(-50%);' +
+    'bottom:calc(90px + env(safe-area-inset-bottom));z-index:25;' +
+    'padding:16px 28px;border-radius:20px;background:var(--red);' +
+    'font-weight:600;color:#fff;font-size:16px;border:0;' +
+    'box-shadow:0 8px 32px rgba(225,29,46,.4)'
   confirmBtn.textContent = 'Поставить здесь'
   confirmBtn.onclick = () => {
-    const c = map.center
-    if (!c) return toast('Подождите…')
-    confirmBtn.remove()
-    openForm(c[1], c[0])
-    state.pickMode = false
-    el('pick-cross').style.display = 'none'
-    el('row2').style.display = ''
-    el('btn-add').textContent = '+ Метка'
-    el('btn-add').onclick = null
-    location.reload()  // reset
+    const c = map?.center
+    if (!c) return toast('Подождите, карта загружается…')
+    const lat = c[1], lon = c[0]
+    exitPickMode()
+    bindAddButton()
+    openForm(lat, lon)
   }
   document.body.appendChild(confirmBtn)
 }
+function bindAddButton() {
+  el('btn-add').onclick = () => {
+    if (!state.user) return openSheet('auth')
+    el('btn-add').click()
+  }
+  el('btn-add').onclick = arguments.callee // no-op
+  // Проще: переустанавливаем оригинальный обработчик через onclick-функцию
+  el('btn-add').onclick = null
+  el('btn-add').addEventListener('click', addButtonHandler, { once: false })
+}
+// Чистый обработчик
+function addButtonHandler(e) {
+  e.stopImmediatePropagation()
+  if (!state.user) return openSheet('auth')
+  if (state.pickMode) return
+  state.pickMode = true
+  el('pick-cross').style.display = 'block'
+  el('row2').style.display = 'none'
+  el('btn-add').textContent = 'Отмена'
+  el('btn-add').onclick = () => { exitPickMode() }
+
+  const confirmBtn = document.createElement('button')
+  confirmBtn.id = 'pick-confirm'
+  confirmBtn.style.cssText =
+    'position:fixed;left:50%;transform:translateX(-50%);' +
+    'bottom:calc(90px + env(safe-area-inset-bottom));z-index:25;' +
+    'padding:16px 28px;border-radius:20px;background:var(--red);' +
+    'font-weight:600;color:#fff;font-size:16px;border:0;' +
+    'box-shadow:0 8px 32px rgba(225,29,46,.4)'
+  confirmBtn.textContent = 'Поставить здесь'
+  confirmBtn.onclick = () => {
+    const c = map?.center
+    if (!c) return toast('Подождите…')
+    const lat = c[1], lon = c[0]
+    exitPickMode()
+    openForm(lat, lon)
+  }
+  document.body.appendChild(confirmBtn)
+}
+el('btn-add').onclick = addButtonHandler
+
 el('btn-admin').onclick = openAdmin
 el('btn-locate').onclick = () => {
   if (!navigator.geolocation) return toast('Геолокация не поддерживается')
@@ -947,24 +968,10 @@ el('btn-locate').onclick = () => {
     { enableHighAccuracy: true, timeout: 10000 }
   )
 }
-el('search').addEventListener('keydown', async e => {
-  if (e.key !== 'Enter') return
-  const q = e.target.value.trim()
-  if (!q) return
-  try {
-    const res = await ymaps3.search({ text: q })
-    const first = res?.[0]
-    const coords = first?.geometry?.coordinates
-    if (coords) { setCenter(coords[1], coords[0], 15); toast('Найдено: ' + (first.properties?.name || q)) }
-    else toast('Ничего не найдено')
-  } catch (err) { toast('Ошибка поиска') }
-})
 
 /* ========== REALTIME ========== */
 supabase.channel('markers-rt')
-  .on('postgres_changes', { event: '*', schema: 'public', table: 'markers' }, () => {
-    loadMarkers()
-  })
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'markers' }, () => loadMarkers())
   .subscribe()
 
 /* ========== START ========== */
@@ -974,7 +981,6 @@ async function start() {
   await loadMarkers()
   renderFilterTypes()
   renderRadiusBtns()
-  // Пробуем получить геолокацию без запроса разрешения — если уже разрешено, применим
   if (navigator.permissions) {
     try {
       const p = await navigator.permissions.query({ name: 'geolocation' })
