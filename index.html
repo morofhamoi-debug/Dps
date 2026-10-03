@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Магазин</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.js"></script>
 <style>
 :root{
   --bg:#f2f2f7; --bg-card:rgba(255,255,255,.72); --bg-solid:#fff; --bg-elevated:#fff;
@@ -151,12 +152,13 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
   background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);
   overflow:hidden;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
   box-shadow:var(--shadow);display:flex;flex-direction:column;transition:transform .15s;position:relative;
+  min-width:0;
 }
 .product:active{transform:scale(.985)}
 .product .ph{aspect-ratio:1;background:linear-gradient(135deg,var(--border),transparent);position:relative;overflow:hidden}
 .product .ph img{width:100%;height:100%;object-fit:cover;display:block}
 .product .ph .placeholder{position:absolute;inset:0;display:grid;place-items:center;color:var(--text-3)}
-.product .body{padding:12px;display:flex;flex-direction:column;gap:8px;flex:1}
+.product .body{padding:12px;display:flex;flex-direction:column;gap:8px;flex:1;min-width:0}
 .product .name{font-weight:600;font-size:14px;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .product .brand{font-size:12px;color:var(--text-3);margin-top:-4px}
 .product .prices{display:flex;justify-content:space-between;font-size:12.5px;color:var(--text-2);gap:6px;flex-wrap:wrap}
@@ -176,7 +178,15 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
 .badge.fav{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.4);width:30px;height:30px;padding:0;display:grid;place-items:center;color:#ffcc00;border-radius:999px}
 .badge.fav.on{color:#ffcc00}
 .badge.fav:not(.on){color:rgba(255,255,255,.9)}
-.prod-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:auto}
+
+/* ИСПРАВЛЕНИЕ: кнопки товара не вылезают за пределы */
+.prod-actions{
+  display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:auto;
+  width:100%;min-width:0;
+}
+.prod-actions .btn{
+  min-width:0;overflow:hidden;text-overflow:ellipsis;padding:8px 8px;font-size:12.5px;
+}
 
 .search-wrap{position:relative;margin-bottom:10px}
 .search-wrap input{padding-left:40px;background:var(--bg-card);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
@@ -312,6 +322,8 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
 .toast.success .ic{color:var(--green)}
 .toast.error{border-color:rgba(255,59,48,.4)}
 .toast.error .ic{color:var(--red)}
+.toast.info{border-color:rgba(10,132,255,.4)}
+.toast.info .ic{color:var(--accent)}
 @keyframes toastIn{from{transform:translateY(-20px);opacity:0}to{transform:translateY(0);opacity:1}}
 
 .sheet-list{display:flex;flex-direction:column;gap:0}
@@ -351,6 +363,18 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
 .hidden{display:none!important}
 .center{text-align:center}
 
+/* Sync indicator */
+#sync-badge{
+  position:fixed;top:calc(var(--sat) + 8px);right:12px;z-index:60;
+  padding:6px 10px;border-radius:999px;background:var(--bg-card);
+  border:1px solid var(--border);font-size:11px;font-weight:700;
+  color:var(--text-3);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  display:flex;align-items:center;gap:6px;transition:opacity .3s;
+}
+#sync-badge.online{color:var(--green)}
+#sync-badge.offline{color:var(--red)}
+#sync-badge .dot{width:7px;height:7px;border-radius:999px;background:currentColor}
+
 /* Guest mode */
 .guest-wrap{max-width:1100px;margin:0 auto;padding:16px 14px calc(24px + var(--sab))}
 .guest-hero{text-align:center;padding:24px 16px 20px}
@@ -372,6 +396,7 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
 </style>
 </head>
 <body>
+<div id="sync-badge" class="hidden"><span class="dot"></span><span id="sync-text">…</span></div>
 <div id="app">
   <aside id="sidebar">
     <div class="brand"><div class="logo" data-svg="bag"></div><div>Мой магазин</div></div>
@@ -389,7 +414,29 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
 "use strict";
 
 /* ============================================================
-   SVG ICONS (контурные)
+   SUPABASE CONFIG
+   ВАЖНО: Project URL — из Supabase Settings → API
+   Anon key — публичный, его не страшно публиковать в HTML.
+============================================================ */
+const SUPABASE_CONFIG = {
+  url: 'https://prpuoiqusgodowsdfpqe.supabase.co',
+  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBycHVvaXF1c2dvZG93c2RmcHFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEwNDgzOTIsImV4cCI6MjEwNjYyNDM5Mn0.F47DlmX1mM3QIjGg0JpUfMkHduAIReXcyMdGDzT4-3w',
+  bucket: 'photos'
+};
+
+let supabase = null;
+function initSupabase(){
+  if(!window.supabase || !window.supabase.createClient) return null;
+  try{
+    supabase = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey, {
+      auth: { persistSession: false }
+    });
+    return supabase;
+  }catch(e){ console.warn('supabase init', e); return null; }
+}
+
+/* ============================================================
+   SVG ICONS
 ============================================================ */
 const ICON_PATHS = {
   home:'<path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
@@ -433,7 +480,8 @@ const ICON_PATHS = {
   alert:'<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
   info:'<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>',
   shirt:'<path d="M16 3l4 2v6h-3v10H7V11H4V5l4-2 2 1h4z"/>',
-  ruler:'<path d="M3 8h18v8H3z"/><line x1="7" y1="8" x2="7" y2="12"/><line x1="11" y1="8" x2="11" y2="10"/><line x1="15" y1="8" x2="15" y2="12"/><line x1="19" y1="8" x2="19" y2="10"/>'
+  ruler:'<path d="M3 8h18v8H3z"/><line x1="7" y1="8" x2="7" y2="12"/><line x1="11" y1="8" x2="11" y2="10"/><line x1="15" y1="8" x2="15" y2="12"/><line x1="19" y1="8" x2="19" y2="10"/>',
+  cloud:'<path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>'
 };
 
 function ic(name, size = 20, opts = {}){
@@ -447,7 +495,6 @@ function ic(name, size = 20, opts = {}){
 function icFilled(name, size = 20, opts = {}){
   return ic(name, size, Object.assign({fill:'currentColor', stroke:'currentColor', strokeWidth:1.4}, opts));
 }
-// Заменить все [data-svg] на реальные SVG
 function hydrateSvg(root=document){
   root.querySelectorAll('[data-svg]').forEach(el => {
     el.innerHTML = ic(el.dataset.svg, el.dataset.svgSize ? +el.dataset.svgSize : 20);
@@ -472,7 +519,7 @@ const ADMIN_TG_ID = 7800810111;
 ============================================================ */
 const $ = (sel, root=document) => root.querySelector(sel);
 const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
-const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,9);
+const uid = () => (crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2,9));
 const escapeHTML = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 function fmt(n){
@@ -515,18 +562,12 @@ function greeting(){
 }
 
 /* ============================================================
-   AUTH (Telegram / Guest)
+   AUTH
 ============================================================ */
-const auth = {
-  isAdmin: false,
-  tgUserId: null,
-  tgUser: null,
-  reason: 'safari' // 'telegram-admin' | 'telegram-guest' | 'safari' | 'dev'
-};
+const auth = { isAdmin: false, tgUserId: null, tgUser: null, reason: 'safari' };
 function detectAuth(){
   const params = new URLSearchParams(location.search);
   const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'file:';
-  // Dev-режим только локально
   if(isLocal && params.get('admin') === '1'){
     auth.isAdmin = true;
     auth.tgUserId = ADMIN_TG_ID;
@@ -561,7 +602,7 @@ function detectAuth(){
 }
 
 /* ============================================================
-   IndexedDB
+   IndexedDB (кеш фото)
 ============================================================ */
 let idb = null;
 function openDB(){
@@ -608,16 +649,23 @@ function idbKeys(){
   });
 }
 const photoURLs = {};
-async function preloadPhotos(){
-  try{
-    const keys = await idbKeys();
-    for(const id of keys){
-      const blob = await idbGet(id);
-      if(blob) photoURLs[id] = URL.createObjectURL(blob);
-    }
-  }catch(e){ console.warn('photo preload', e); }
+
+function getPhotoURL(id){
+  if(!id) return '';
+  // Supabase public URL
+  if(supabase && /^https?:/.test(id) === false && id.length > 20){
+    try{
+      return supabase.storage.from(SUPABASE_CONFIG.bucket).getPublicUrl(id).data.publicUrl;
+    }catch(e){}
+  }
+  return photoURLs[id] || '';
 }
-function getPhotoURL(id){ return id ? (photoURLs[id] || '') : ''; }
+function supabasePhotoUrl(path){
+  if(!supabase) return '';
+  try{
+    return supabase.storage.from(SUPABASE_CONFIG.bucket).getPublicUrl(path).data.publicUrl;
+  }catch(e){ return ''; }
+}
 
 function resizeImage(file, maxDim=1400, quality=0.82){
   return new Promise((resolve, reject) => {
@@ -646,10 +694,252 @@ function resizeImage(file, maxDim=1400, quality=0.82){
 }
 async function addPhotoFromFile(file){
   const blob = await resizeImage(file);
-  const id = uid();
-  await idbPut(id, blob);
+  const id = uid() + '.jpg';
+  // Кэш локально
+  try{ await idbPut(id, blob); }catch(e){}
   photoURLs[id] = URL.createObjectURL(blob);
+  // Загрузка в Supabase Storage
+  if(supabase){
+    try{
+      const { error } = await supabase.storage.from(SUPABASE_CONFIG.bucket).upload(id, blob, {
+        contentType: 'image/jpeg',
+        upsert: false
+      });
+      if(error) console.warn('storage upload', error);
+    }catch(e){ console.warn('storage upload ex', e); }
+  }
   return id;
+}
+
+/* ============================================================
+   SUPABASE SYNC
+============================================================ */
+function setSyncBadge(status, text){
+  const el = document.getElementById('sync-badge');
+  const t = document.getElementById('sync-text');
+  if(!el) return;
+  el.classList.remove('hidden');
+  el.classList.remove('online','offline');
+  el.classList.add(status);
+  t.textContent = text;
+  clearTimeout(window.__syncHideT);
+  if(status === 'online') window.__syncHideT = setTimeout(()=>el.classList.add('hidden'), 2500);
+}
+function updateOnlineState(){
+  if(navigator.onLine){
+    setSyncBadge('online','синхронизировано');
+  } else {
+    setSyncBadge('offline','оффлайн');
+  }
+}
+window.addEventListener('online', updateOnlineState);
+window.addEventListener('offline', updateOnlineState);
+
+/* -------- Преобразование строк БД ↔ объект приложения -------- */
+function dbToProduct(r){
+  return {
+    id: r.id, name: r.name,
+    category: r.category||'', brand: r.brand||'', sku: r.sku||'', color: r.color||'',
+    purchasePrice: Number(r.purchase_price)||0,
+    salePrice: Number(r.sale_price)||0,
+    supplierId: r.supplier_id||'',
+    purchaseDate: r.purchase_date ? new Date(r.purchase_date).getTime() : Date.now(),
+    purchaseQty: Number(r.purchase_qty)||0,
+    purchaseTotal: Number(r.purchase_total)||0,
+    description: r.description||'',
+    photos: r.photos||[],
+    mainPhotoId: r.main_photo||null,
+    sizes: r.sizes||{},
+    favorite: !!r.favorite,
+    soldCount: Number(r.sold_count)||0,
+    createdAt: r.created_at ? new Date(r.created_at).getTime() : Date.now()
+  };
+}
+function productToDb(p){
+  return {
+    id: p.id, name: p.name,
+    category: p.category||null, brand: p.brand||null, sku: p.sku||null, color: p.color||null,
+    purchase_price: p.purchasePrice||0,
+    sale_price: p.salePrice||0,
+    supplier_id: p.supplierId||null,
+    purchase_date: p.purchaseDate ? new Date(p.purchaseDate).toISOString() : new Date().toISOString(),
+    purchase_qty: p.purchaseQty||0,
+    purchase_total: p.purchaseTotal||0,
+    description: p.description||null,
+    photos: p.photos||[],
+    main_photo: p.mainPhotoId||null,
+    sizes: p.sizes||{},
+    favorite: !!p.favorite,
+    sold_count: p.soldCount||0
+  };
+}
+function dbToOrder(r){
+  return {
+    id: r.id, number: r.number,
+    date: r.date ? new Date(r.date).getTime() : Date.now(),
+    productId: r.product_id, productName: r.product_name, productSku: r.product_sku||'',
+    photoId: r.photo_id||null,
+    size: r.size, quantity: r.quantity, price: Number(r.price)||0,
+    purchasePrice: Number(r.purchase_price)||0,
+    deliveryCost: Number(r.delivery_cost)||0,
+    total: Number(r.total)||0, profit: Number(r.profit)||0,
+    status: r.status||'Новый',
+    deliveryService: r.delivery_service||'', trackNumber: r.track_number||'',
+    customer: r.customer||''
+  };
+}
+function orderToDb(o){
+  return {
+    id: o.id, number: o.number,
+    date: o.date ? new Date(o.date).toISOString() : new Date().toISOString(),
+    product_id: o.productId||null, product_name: o.productName, product_sku: o.productSku||null,
+    photo_id: o.photoId||null,
+    size: o.size, quantity: o.quantity, price: o.price||0,
+    purchase_price: o.purchasePrice||0,
+    delivery_cost: o.deliveryCost||0,
+    total: o.total||0, profit: o.profit||0,
+    status: o.status||'Новый',
+    delivery_service: o.deliveryService||null, track_number: o.trackNumber||null,
+    customer: o.customer||null
+  };
+}
+function dbToExpense(r){
+  return { id: r.id, title: r.title, amount: Number(r.amount)||0,
+    category: r.category||'', date: r.date ? new Date(r.date).getTime() : Date.now(),
+    comment: r.comment||'' };
+}
+function expenseToDb(e){
+  return { id: e.id, title: e.title, amount: e.amount||0,
+    category: e.category||null, date: e.date ? new Date(e.date).toISOString() : new Date().toISOString(),
+    comment: e.comment||null };
+}
+function dbToSupplier(r){
+  return { id: r.id, name: r.name, contact: r.contact||'', phone: r.phone||'',
+    telegram: r.telegram||'', website: r.website||'', comment: r.comment||'' };
+}
+function supplierToDb(s){
+  return { id: s.id, name: s.name, contact: s.contact||null, phone: s.phone||null,
+    telegram: s.telegram||null, website: s.website||null, comment: s.comment||null };
+}
+function dbToHistory(r){
+  return { id: r.id, ts: r.ts ? new Date(r.ts).getTime() : Date.now(), text: r.text };
+}
+function historyToDb(h){
+  return { id: h.id, ts: new Date(h.ts).toISOString(), text: h.text };
+}
+
+/* -------- Массовые операции -------- */
+async function supabaseLoadAll(){
+  if(!supabase) return false;
+  try{
+    setSyncBadge('info','загрузка…');
+    const [prodRes, ordRes, expRes, supRes, histRes] = await Promise.all([
+      supabase.from('products').select('*').order('created_at',{ascending:false}),
+      supabase.from('orders').select('*').order('date',{ascending:false}),
+      supabase.from('expenses').select('*').order('date',{ascending:false}),
+      supabase.from('suppliers').select('*').order('created_at',{ascending:false}),
+      supabase.from('history').select('*').order('ts',{ascending:false}).limit(500)
+    ]);
+    if(prodRes.error) throw prodRes.error;
+    if(ordRes.error) throw ordRes.error;
+    if(expRes.error) throw expRes.error;
+    if(supRes.error) throw supRes.error;
+    if(histRes.error) throw histRes.error;
+
+    state.products = (prodRes.data||[]).map(dbToProduct);
+    state.orders = (ordRes.data||[]).map(dbToOrder);
+    state.expenses = (expRes.data||[]).map(dbToExpense);
+    state.suppliers = (supRes.data||[]).map(dbToSupplier);
+    state.history = (histRes.data||[]).map(dbToHistory).reverse();
+    save();
+    setSyncBadge('online','синхронизировано');
+    return true;
+  }catch(e){
+    console.warn('supabaseLoadAll error', e);
+    setSyncBadge('offline','ошибка синхронизации');
+    return false;
+  }
+}
+
+async function sbUpsertProduct(p){
+  if(!supabase) return;
+  try{
+    const { error } = await supabase.from('products').upsert(productToDb(p));
+    if(error) throw error;
+    setSyncBadge('online','сохранено');
+  }catch(e){ console.warn('sbUpsertProduct', e); setSyncBadge('offline','ошибка синхронизации'); }
+}
+async function sbDeleteProduct(id){
+  if(!supabase) return;
+  try{
+    await supabase.from('products').delete().eq('id', id);
+    setSyncBadge('online','удалено');
+  }catch(e){ console.warn('sbDeleteProduct', e); }
+}
+async function sbUpsertOrder(o){
+  if(!supabase) return;
+  try{
+    const { error } = await supabase.from('orders').upsert(orderToDb(o));
+    if(error) throw error;
+    setSyncBadge('online','сохранено');
+  }catch(e){ console.warn('sbUpsertOrder', e); }
+}
+async function sbDeleteOrder(id){
+  if(!supabase) return;
+  try{ await supabase.from('orders').delete().eq('id', id); }catch(e){}
+}
+async function sbUpsertExpense(e){
+  if(!supabase) return;
+  try{
+    const { error } = await supabase.from('expenses').upsert(expenseToDb(e));
+    if(error) throw error;
+    setSyncBadge('online','сохранено');
+  }catch(e){ console.warn('sbUpsertExpense', e); }
+}
+async function sbDeleteExpense(id){
+  if(!supabase) return;
+  try{ await supabase.from('expenses').delete().eq('id', id); }catch(e){}
+}
+async function sbUpsertSupplier(s){
+  if(!supabase) return;
+  try{
+    const { error } = await supabase.from('suppliers').upsert(supplierToDb(s));
+    if(error) throw error;
+    setSyncBadge('online','сохранено');
+  }catch(e){ console.warn('sbUpsertSupplier', e); }
+}
+async function sbDeleteSupplier(id){
+  if(!supabase) return;
+  try{ await supabase.from('suppliers').delete().eq('id', id); }catch(e){}
+}
+async function sbInsertHistory(h){
+  if(!supabase) return;
+  try{ await supabase.from('history').insert(historyToDb(h)); }catch(e){}
+}
+async function sbClearHistory(){
+  if(!supabase) return;
+  try{ await supabase.from('history').delete().neq('id','00000000-0000-0000-0000-000000000000'); }catch(e){}
+}
+
+/* -------- Real-time подписка -------- */
+function subscribeRealtime(){
+  if(!supabase) return;
+  try{
+    supabase.channel('shop-products')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, async (payload) => {
+        if(payload.eventType === 'INSERT' || payload.eventType === 'UPDATE'){
+          const p = dbToProduct(payload.new);
+          const idx = state.products.findIndex(x=>x.id===p.id);
+          if(idx >= 0) state.products[idx] = p; else state.products.unshift(p);
+        } else if(payload.eventType === 'DELETE'){
+          const old = payload.old;
+          state.products = state.products.filter(x=>x.id !== old.id);
+        }
+        save();
+        render();
+      })
+      .subscribe();
+  }catch(e){ console.warn('realtime', e); }
 }
 
 /* ============================================================
@@ -671,7 +961,7 @@ function save(){
       suppliers: state.suppliers, history: state.history.slice(-800),
       customSizes: state.customSizes, settings: state.settings
     }));
-  }catch(e){ console.error('save error', e); toast('Ошибка сохранения','error'); }
+  }catch(e){ console.error('save error', e); }
 }
 function load(){
   try{
@@ -709,7 +999,7 @@ function applyTheme(){
 function toast(msg, type='success'){
   const el = document.createElement('div');
   el.className = 'toast ' + type;
-  const ico = type === 'error' ? ic('alert', 18) : ic('check', 18);
+  const ico = type === 'error' ? ic('alert', 18) : type === 'info' ? ic('info', 18) : ic('check', 18);
   el.innerHTML = '<span class="ic">'+ico+'</span><span>'+escapeHTML(msg)+'</span>';
   $('#toasts').appendChild(el);
   setTimeout(()=>{
@@ -777,8 +1067,10 @@ function confirmDialog(title, message, onConfirm, confirmLabel='Удалить')
    ИСТОРИЯ
 ============================================================ */
 function recordHistory(text){
-  state.history.push({ id: uid(), ts: Date.now(), text });
+  const h = { id: uid(), ts: Date.now(), text };
+  state.history.push(h);
   if(state.history.length > 2000) state.history = state.history.slice(-1500);
+  sbInsertHistory(h);
 }
 
 /* ============================================================
@@ -830,7 +1122,7 @@ function productStatus(p){
 }
 
 /* ============================================================
-   SVG-ГРАФИК
+   ГРАФИК
 ============================================================ */
 function renderBarChart(labels, series){
   const W = 900, H = 280, PL = 60, PR = 20, PT = 20, PB = 40;
@@ -903,6 +1195,8 @@ function renderNav(){
     $('#bottomnav').style.display = 'none';
     return;
   }
+  $('#sidebar').style.display = '';
+  $('#bottomnav').style.display = '';
   $('#sidebar-nav').innerHTML = NAV_ITEMS.map(it =>
     '<button class="nav-item '+(state.ui.view===it.id?'active':'')+'" data-action="nav" data-view="'+it.id+'">' +
       '<span class="ic">'+ic(it.icn, 18)+'</span><span>'+it.label+'</span>' +
@@ -941,7 +1235,7 @@ function openMoreSheet(){
 function render(){
   renderNav();
   const c = $('#content');
-  if(!auth.isAdmin){ c.innerHTML = viewGuest(); return; }
+  if(!auth.isAdmin){ c.innerHTML = viewGuest(); hydrateSvg(c); return; }
   const v = state.ui.view;
   if(v==='dashboard') c.innerHTML = viewDashboard();
   else if(v==='inventory') c.innerHTML = viewInventory();
@@ -955,24 +1249,20 @@ function render(){
 }
 
 /* ============================================================
-   GUEST VIEW (каталог)
+   GUEST VIEW — только фото, название, бренд, цена, размеры
 ============================================================ */
 function viewGuest(){
   const ui = state.ui;
-  // Гости видят только товары с наличием
   let list = state.products.filter(p => productStockSummary(p).total > 0);
   const q = ui.guestSearch.trim().toLowerCase();
   if(q){
     list = list.filter(p => {
-      const hay = [p.name, p.brand, p.category, p.color, p.sku].filter(Boolean).join(' ').toLowerCase();
+      const hay = [p.name, p.brand, p.category, p.color].filter(Boolean).join(' ').toLowerCase();
       return hay.includes(q);
     });
   }
   if(ui.guestCategory) list = list.filter(p => (p.category||'') === ui.guestCategory);
-  list.sort((a,b)=>{
-    const da = a.createdAt||0, db = b.createdAt||0;
-    return db - da;
-  });
+  list.sort((a,b)=> (b.createdAt||0) - (a.createdAt||0));
   const categories = [...new Set(state.products.filter(p=>productStockSummary(p).total>0).map(p=>p.category).filter(Boolean))];
 
   return `
@@ -1016,6 +1306,7 @@ function guestCard(p){
   const img = getPhotoURL(p.mainPhotoId || (p.photos && p.photos[0]));
   const sizes = p.sizes || {};
   const availableSizes = Object.keys(sizes).filter(k => (sizes[k]||0) > 0);
+  // НЕ показываем: закупка, прибыль, артикул, поставщик, сумма закупа
   return `
     <div class="product" data-action="guest-open" data-id="${p.id}">
       <div class="ph">
@@ -1043,6 +1334,7 @@ function openGuestProduct(id){
   const sizes = p.sizes || {};
   const availableSizes = Object.keys(sizes).filter(k => (sizes[k]||0) > 0);
 
+  // Гостю — только фото, название, бренд/цвет/категория, цена, размеры, описание
   const body =
     (photos.length ? `
       <div class="gallery">
@@ -1070,15 +1362,6 @@ function openGuestProduct(id){
 ============================================================ */
 function periodLabel(p){
   return {today:'Сегодня','7d':'7 дней',month:'Месяц','3m':'3 месяца',year:'Год',all:'Всё время'}[p] || p;
-}
-function calcStatsPrev(period){
-  const now = Date.now();
-  const start = periodStart(period);
-  const len = now - start;
-  const prevStart = start - len;
-  const prevEnd = start;
-  const orders = state.orders.filter(o => o.date >= prevStart && o.date < prevEnd && o.status !== 'Отменён');
-  return { revenue: orders.reduce((s,o)=>s+Number(o.total||0),0) };
 }
 function lowStockProducts(){
   const th = Number(state.settings.lowStock)||2;
@@ -1618,10 +1901,13 @@ function openProductForm(productId){
           Object.assign(editing, data);
           recordHistory('Обновлён товар «'+name+'»');
           toast('Товар обновлён');
+          sbUpsertProduct(editing);
         } else {
-          state.products.push({ id: uid(), createdAt: Date.now(), soldCount: 0, favorite:false, ...data });
+          const np = { id: uid(), createdAt: Date.now(), soldCount: 0, favorite:false, ...data };
+          state.products.push(np);
           recordHistory('Добавлен товар «'+name+'»');
           toast('Товар добавлен');
+          sbUpsertProduct(np);
         }
         save();
         closeModal(root);
@@ -1653,6 +1939,9 @@ function renderPhotoGrid(root){
       formPhotos = formPhotos.filter(x=>x!==id);
       try{ await idbDel(id); }catch(err){}
       if(photoURLs[id]){ URL.revokeObjectURL(photoURLs[id]); delete photoURLs[id]; }
+      if(supabase){
+        try{ await supabase.storage.from(SUPABASE_CONFIG.bucket).remove([id]); }catch(e){}
+      }
       if(formMainPhoto === id) formMainPhoto = formPhotos[0] || null;
       renderPhotoGrid(root);
     });
@@ -1780,6 +2069,7 @@ function changeStock(productId, size, delta){
   p.sizes[size] = next;
   recordHistory((delta>0?'Добавлено ':'Убавлено ') + Math.abs(delta) + ' шт. размера ' + size + ' · ' + (p.name||''));
   save();
+  sbUpsertProduct(p);
   toast((delta>0?'+':'−') + Math.abs(delta) + ' · ' + size);
   if(modalStack.length){
     const top = modalStack[modalStack.length-1];
@@ -1880,6 +2170,8 @@ function openSaleModal(productId){
         state.orders.push(order);
         recordHistory('Продан товар «'+p.name+'», размер '+size+' × '+qty+' на '+fmt(order.total));
         save();
+        sbUpsertProduct(p);
+        sbUpsertOrder(order);
         toast('Продажа зарегистрирована');
         closeModal(root);
         render();
@@ -1985,6 +2277,7 @@ function openOrderDetail(orderId){
         o.trackNumber = $('#ord-track', root).value.trim();
         recordHistory('Изменён заказ №'+(o.number||''));
         save();
+        sbUpsertOrder(o);
         toast('Сохранено');
         closeModal(root);
         render();
@@ -1996,10 +2289,11 @@ function openOrderDetail(orderId){
           if(p && p.sizes && (o.size in p.sizes) && o.status !== 'Отменён'){
             p.sizes[o.size] = (p.sizes[o.size]||0) + o.quantity;
             p.soldCount = Math.max(0, (p.soldCount||0) - o.quantity);
+            sbUpsertProduct(p);
           }
           state.orders = state.orders.filter(x=>x.id!==o.id);
           recordHistory('Удалён заказ №'+(o.number||''));
-          save(); toast('Заказ удалён'); render();
+          save(); sbDeleteOrder(o.id); toast('Заказ удалён'); render();
         });
       });
     }
@@ -2092,10 +2386,13 @@ function openExpenseForm(id){
           Object.assign(editing, data);
           recordHistory('Обновлён расход «'+title+'» '+fmt(amount));
           toast('Расход обновлён');
+          sbUpsertExpense(editing);
         } else {
-          state.expenses.push({ id: uid(), ...data });
+          const ne = { id: uid(), ...data };
+          state.expenses.push(ne);
           recordHistory('Добавлен расход «'+title+'» '+fmt(amount));
           toast('Расход добавлен');
+          sbUpsertExpense(ne);
         }
         save(); closeModal(root); render();
       });
@@ -2105,7 +2402,7 @@ function openExpenseForm(id){
           confirmDialog('Удалить расход?','Данное действие нельзя отменить.', () => {
             state.expenses = state.expenses.filter(x=>x.id!==editing.id);
             recordHistory('Удалён расход «'+editing.title+'»');
-            save(); toast('Расход удалён'); render();
+            save(); sbDeleteExpense(editing.id); toast('Расход удалён'); render();
           });
         });
       }
@@ -2246,8 +2543,8 @@ function openSupplierForm(id){
           website: $('#sp-website', root).value.trim(),
           comment: $('#sp-comment', root).value.trim()
         };
-        if(editing){ Object.assign(editing, data); toast('Поставщик обновлён'); }
-        else { state.suppliers.push({ id: uid(), ...data }); toast('Поставщик добавлен'); }
+        if(editing){ Object.assign(editing, data); toast('Поставщик обновлён'); sbUpsertSupplier(editing); }
+        else { const ns = { id: uid(), ...data }; state.suppliers.push(ns); toast('Поставщик добавлен'); sbUpsertSupplier(ns); }
         save(); closeModal(root); render();
       });
       if(editing){
@@ -2255,8 +2552,8 @@ function openSupplierForm(id){
           closeModal(root);
           confirmDialog('Удалить поставщика?','Товары не будут удалены, но связь с поставщиком разорвётся.', () => {
             state.suppliers = state.suppliers.filter(s=>s.id!==editing.id);
-            state.products.forEach(p=>{ if(p.supplierId===editing.id) p.supplierId=''; });
-            save(); toast('Поставщик удалён'); render();
+            state.products.forEach(p=>{ if(p.supplierId===editing.id){ p.supplierId=''; sbUpsertProduct(p); } });
+            save(); sbDeleteSupplier(editing.id); toast('Поставщик удалён'); render();
           });
         });
       }
@@ -2293,8 +2590,8 @@ function openSupplierDetail(id){
         closeModal(root);
         confirmDialog('Удалить поставщика?','Товары останутся, но связь разорвётся.', () => {
           state.suppliers = state.suppliers.filter(x=>x.id!==s.id);
-          state.products.forEach(p=>{ if(p.supplierId===s.id) p.supplierId=''; });
-          save(); toast('Поставщик удалён'); render();
+          state.products.forEach(p=>{ if(p.supplierId===s.id){ p.supplierId=''; sbUpsertProduct(p); } });
+          save(); sbDeleteSupplier(s.id); toast('Поставщик удалён'); render();
         });
       });
     }
@@ -2458,6 +2755,14 @@ function viewSettings(){
     </div>
 
     <div class="card section">
+      <div class="card-head"><div class="card-title">${ic('cloud',14)} Синхронизация</div></div>
+      <div class="info-list">
+        <div class="info-item"><div class="k">Статус</div><div class="v" id="sync-status-text">${navigator.onLine?'Онлайн':'Оффлайн'}</div></div>
+      </div>
+      <button class="btn" style="width:100%;margin-top:8px" data-action="sync-now">${ic('cloud',16)} Синхронизировать сейчас</button>
+    </div>
+
+    <div class="card section">
       <div class="card-head"><div class="card-title">${ic('download',14)} Данные</div></div>
       <button class="btn primary" style="width:100%;margin-bottom:8px" data-action="export-data">${ic('download',16)} Экспорт данных</button>
       <button class="btn" style="width:100%;margin-bottom:8px" data-action="import-data">${ic('upload',16)} Импорт данных</button>
@@ -2480,7 +2785,7 @@ function viewSettings(){
 
     <div class="card section">
       <div class="card-head"><div class="card-title">${ic('info',14)} О приложении</div></div>
-      <div class="section-sub">Панель управления магазином одежды. Данные хранятся локально в браузере (localStorage + IndexedDB).</div>
+      <div class="section-sub">Панель управления магазином одежды. Данные синхронизируются с Supabase и кэшируются локально.</div>
       <div class="section-sub mt-8">Товаров: ${state.products.length} · Заказов: ${state.orders.length} · Расходов: ${state.expenses.length} · Поставщиков: ${state.suppliers.length}</div>
     </div>
   `;
@@ -2499,7 +2804,7 @@ async function exportData(){
       photos[k] = await blobToDataURL(blob);
     }
     const data = {
-      version: 1, exportedAt: Date.now(),
+      version: 2, exportedAt: Date.now(),
       products: state.products, orders: state.orders, expenses: state.expenses,
       suppliers: state.suppliers, history: state.history, customSizes: state.customSizes,
       settings: state.settings, photos
@@ -2542,6 +2847,9 @@ async function importData(file){
           await idbPut(id, blob);
           if(photoURLs[id]) URL.revokeObjectURL(photoURLs[id]);
           photoURLs[id] = URL.createObjectURL(blob);
+          if(supabase){
+            await supabase.storage.from(SUPABASE_CONFIG.bucket).upload(id, blob, { contentType:'image/jpeg', upsert:true });
+          }
         }catch(e){ console.warn('photo import', id, e); }
       }
     }
@@ -2553,6 +2861,16 @@ async function importData(file){
     state.customSizes = data.customSizes || [];
     if(data.settings) Object.assign(state.settings, data.settings);
     save(); applyTheme();
+    // Синхронизация в Supabase
+    if(supabase){
+      toast('Загрузка в облако…','info');
+      try{
+        if(state.suppliers.length) await supabase.from('suppliers').upsert(state.suppliers.map(supplierToDb));
+        if(state.products.length) await supabase.from('products').upsert(state.products.map(productToDb));
+        if(state.orders.length) await supabase.from('orders').upsert(state.orders.map(orderToDb));
+        if(state.expenses.length) await supabase.from('expenses').upsert(state.expenses.map(expenseToDb));
+      }catch(e){ console.warn('import sync', e); }
+    }
     toast('Данные импортированы');
     render();
   }catch(e){ console.error(e); toast('Ошибка импорта: '+e.message,'error'); }
@@ -2566,6 +2884,15 @@ async function resetAllData(){
   }catch(e){}
   Object.keys(photoURLs).forEach(k=>{ URL.revokeObjectURL(photoURLs[k]); delete photoURLs[k]; });
   save();
+  if(supabase){
+    try{
+      await supabase.from('products').delete().neq('id','00000000-0000-0000-0000-000000000000');
+      await supabase.from('orders').delete().neq('id','00000000-0000-0000-0000-000000000000');
+      await supabase.from('expenses').delete().neq('id','00000000-0000-0000-0000-000000000000');
+      await supabase.from('suppliers').delete().neq('id','00000000-0000-0000-0000-000000000000');
+      await supabase.from('history').delete().neq('id','00000000-0000-0000-0000-000000000000');
+    }catch(e){}
+  }
   toast('Все данные удалены');
   render();
 }
@@ -2576,7 +2903,8 @@ async function resetAllData(){
 function seedDemo(){
   const now = Date.now();
   const supId = uid();
-  state.suppliers.push({ id: supId, name:'Demo Supply', contact:'Иван', phone:'+7 900 000-00-00', telegram:'@demo', website:'', comment:'Тестовый поставщик' });
+  const sup = { id: supId, name:'Demo Supply', contact:'Иван', phone:'+7 900 000-00-00', telegram:'@demo', website:'', comment:'Тестовый поставщик' };
+  state.suppliers.push(sup); sbUpsertSupplier(sup);
   const demo = [
     { name:'Nike T-Shirt', brand:'Nike', sku:'NT-001', color:'Black', category:'Футболка', purchasePrice:2000, salePrice:3990, sizes:{S:2, M:5, L:3, XL:null}, qty:10, total:20000 },
     { name:'Nike Hoodie', brand:'Nike', sku:'NH-001', color:'Grey', category:'Худи', purchasePrice:4500, salePrice:7990, sizes:{S:2, M:4, L:3, XL:1}, qty:10, total:45000 },
@@ -2591,6 +2919,7 @@ function seedDemo(){
     };
     delete p.qty; delete p.total;
     state.products.push(p);
+    sbUpsertProduct(p);
   });
   save(); toast('Тестовые данные добавлены'); render();
 }
@@ -2605,15 +2934,9 @@ document.addEventListener('click', (e) => {
   const id = el.dataset.id;
   const view = el.dataset.view;
 
-  // Гостям доступны только:
   if(!auth.isAdmin){
-    if(action === 'guest-open'){
-      e.preventDefault();
-      openGuestProduct(id);
-    } else if(action === 'guest-cat'){
-      state.ui.guestCategory = el.dataset.value || '';
-      render();
-    }
+    if(action === 'guest-open'){ e.preventDefault(); openGuestProduct(id); }
+    else if(action === 'guest-cat'){ state.ui.guestCategory = el.dataset.value || ''; render(); }
     return;
   }
 
@@ -2637,7 +2960,7 @@ document.addEventListener('click', (e) => {
       e.preventDefault(); e.stopPropagation();
       {
         const p = state.products.find(x=>x.id===id);
-        if(p){ p.favorite = !p.favorite; save(); toast(p.favorite?'В избранном':'Убрано из избранного'); render(); }
+        if(p){ p.favorite = !p.favorite; save(); sbUpsertProduct(p); toast(p.favorite?'В избранном':'Убрано из избранного'); render(); }
       } break;
     case 'edit-product':
       { const p = state.products.find(x=>x.id===id); closeAllModals(); if(p) openProductForm(p.id); } break;
@@ -2652,10 +2975,11 @@ document.addEventListener('click', (e) => {
             (p.photos||[]).forEach(pid => {
               idbDel(pid).catch(()=>{});
               if(photoURLs[pid]){ URL.revokeObjectURL(photoURLs[pid]); delete photoURLs[pid]; }
+              if(supabase){ supabase.storage.from(SUPABASE_CONFIG.bucket).remove([pid]).catch(()=>{}); }
             });
             state.products = state.products.filter(x=>x.id!==id);
             recordHistory('Удалён товар «'+(p.name||'')+'»');
-            save(); toast('Товар удалён'); render();
+            save(); sbDeleteProduct(id); toast('Товар удалён'); render();
           }, 'Удалить');
       } break;
     case 'sell':
@@ -2671,6 +2995,14 @@ document.addEventListener('click', (e) => {
     case 'set-theme': state.settings.theme = el.dataset.value; save(); applyTheme(); render(); break;
     case 'export-data': exportData(); break;
     case 'import-data': $('#import-file').click(); break;
+    case 'sync-now':
+      (async () => {
+        toast('Синхронизация…','info');
+        const ok = await supabaseLoadAll();
+        if(ok){ toast('Синхронизировано'); render(); }
+        else toast('Ошибка синхронизации','error');
+      })();
+      break;
     case 'seed-demo':
       confirmDialog('Добавить тестовые данные?','Будут добавлены примеры товаров и один поставщик.', seedDemo, 'Добавить'); break;
     case 'reset-data':
@@ -2680,7 +3012,7 @@ document.addEventListener('click', (e) => {
       }); break;
     case 'clear-history':
       confirmDialog('Очистить историю?','Записи истории будут удалены.', () => {
-        state.history = []; save(); toast('История очищена'); render();
+        state.history = []; save(); sbClearHistory(); toast('История очищена'); render();
       }); break;
   }
 });
@@ -2693,7 +3025,6 @@ document.addEventListener('input', (e) => {
     clearTimeout(window.__invSearchT);
     window.__invSearchT = setTimeout(() => {
       const cur = document.activeElement === el;
-      const val = el.value;
       const pos = el.selectionStart;
       render();
       if(cur){
@@ -2778,20 +3109,33 @@ function openProductPicker(){
 async function init(){
   try{
     await openDB();
-    await preloadPhotos();
   }catch(e){ console.error('IndexedDB недоступен', e); }
+
+  // Инициализация Supabase
+  initSupabase();
+
+  // Загрузка локального кэша (для мгновенного показа)
   load();
   detectAuth();
   applyTheme();
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-    if(state.settings.theme === 'system') applyTheme();
-  });
 
   if(auth.isAdmin) state.ui.view = state.ui.view || 'dashboard';
   else state.ui.view = 'guest';
 
   render();
   hydrateSvg(document);
+
+  // Загрузка из Supabase (если доступен)
+  if(supabase){
+    updateOnlineState();
+    const ok = await supabaseLoadAll();
+    if(ok){ render(); hydrateSvg(document); }
+    subscribeRealtime();
+  }
+
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if(state.settings.theme === 'system') applyTheme();
+  });
 
   document.addEventListener('keydown', (e) => {
     if(e.key === 'Escape' && modalStack.length) closeModal();
